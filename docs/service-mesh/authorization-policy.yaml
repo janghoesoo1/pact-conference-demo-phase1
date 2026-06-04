@@ -1,0 +1,52 @@
+# Gateway만 외부 트래픽 수신 허용
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-gateway-ingress
+  namespace: conference
+spec:
+  selector:
+    matchLabels:
+      app: gateway
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            namespaces: ["istio-system"]
+---
+# 내부 서비스는 Gateway와 허용된 서비스에서만 접근 가능
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-internal-traffic
+  namespace: conference
+spec:
+  selector:
+    matchLabels:
+      app: session-service
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/conference/sa/gateway"
+              - "cluster.local/ns/conference/sa/attendee-service"
+              - "cluster.local/ns/conference/sa/cfp-service"
+---
+# Attendee Service 접근 제어
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-attendee-access
+  namespace: conference
+spec:
+  selector:
+    matchLabels:
+      app: attendee-service
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/conference/sa/gateway"
+              - "cluster.local/ns/conference/sa/cfp-service"

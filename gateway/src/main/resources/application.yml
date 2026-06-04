@@ -20,6 +20,14 @@ spring:
             uri: http://localhost:8083
             predicates:
               - Path=/api/proposals/**
+          - id: session-service-v1
+            uri: http://localhost:8082
+            predicates:
+              - Path=/api/v1/sessions/**
+          - id: session-service-v2
+            uri: http://localhost:8082
+            predicates:
+              - Path=/api/v2/sessions/**
 
 management:
   endpoints:

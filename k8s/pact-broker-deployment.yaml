@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "pact"
+            - name: POSTGRES_PASSWORD
+              value: "pact"
+            - name: POSTGRES_DB
+              value: "pact_broker"
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - pact
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pact-broker
+  labels:
+    app: pact-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pact-broker
+  template:
+    metadata:
+      labels:
+        app: pact-broker
+    spec:
+      containers:
+        - name: pact-broker
+          image: pactfoundation/pact-broker:2.113.1.1
+          ports:
+            - containerPort: 9292
+          env:
+            - name: PACT_BROKER_DATABASE_URL
+              value: "postgres://pact:pact@postgres/pact_broker"
+            - name: PACT_BROKER_BASIC_AUTH_USERNAME
+              value: "pact"
+            - name: PACT_BROKER_BASIC_AUTH_PASSWORD
+              value: "pact"
+            - name: PACT_BROKER_LOG_LEVEL
+              value: "INFO"
+          readinessProbe:
+            httpGet:
+              path: /diagnostic/status/heartbeat
+              port: 9292
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /diagnostic/status/heartbeat
+              port: 9292
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pact-broker
+spec:
+  selector:
+    app: pact-broker
+  ports:
+    - port: 9292
+      targetPort: 9292
+  type: LoadBalancer

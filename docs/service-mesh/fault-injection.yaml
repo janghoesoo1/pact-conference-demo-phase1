@@ -1,0 +1,48 @@
+# 장애 주입: session-service에 10%의 요청에 500ms 지연 추가
+# 카오스 엔지니어링 / 복원력 테스트용
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: session-service-fault
+  namespace: conference
+spec:
+  hosts:
+    - session-service
+  http:
+    - fault:
+        delay:
+          percentage:
+            value: 10.0
+          fixedDelay: 500ms
+        abort:
+          percentage:
+            value: 5.0
+          httpStatus: 503
+      route:
+        - destination:
+            host: session-service
+---
+# CFP Service → Attendee Service 호출 시 지연 테스트
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: attendee-service-fault
+  namespace: conference
+spec:
+  hosts:
+    - attendee-service
+  http:
+    - match:
+        - sourceLabels:
+            app: cfp-service
+      fault:
+        delay:
+          percentage:
+            value: 20.0
+          fixedDelay: 1s
+      route:
+        - destination:
+            host: attendee-service
+    - route:
+        - destination:
+            host: attendee-service

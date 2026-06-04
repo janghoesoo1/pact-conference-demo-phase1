@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cfp-service
+  labels:
+    app: cfp-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cfp-service
+  template:
+    metadata:
+      labels:
+        app: cfp-service
+    spec:
+      containers:
+        - name: cfp-service
+          image: conference/cfp-service:latest
+          ports:
+            - containerPort: 8083
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "default"
+            - name: SESSION_SERVICE_URL
+              value: "http://session-service:8082"
+            - name: ATTENDEE_SERVICE_URL
+              value: "http://attendee-service:8081"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cfp-service
+spec:
+  selector:
+    app: cfp-service
+  ports:
+    - port: 8083
+      targetPort: 8083
+  type: ClusterIP

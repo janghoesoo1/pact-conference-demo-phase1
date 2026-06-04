@@ -1,0 +1,23 @@
+# 네임스페이스 전체에 mTLS STRICT 모드 적용
+# 모든 서비스 간 통신이 TLS로 암호화됨
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: conference
+spec:
+  mtls:
+    mode: STRICT
+---
+# Pact Broker는 PERMISSIVE (외부 도구 연동 허용)
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: pact-broker
+  namespace: conference
+spec:
+  selector:
+    matchLabels:
+      app: pact-broker
+  mtls:
+    mode: PERMISSIVE
