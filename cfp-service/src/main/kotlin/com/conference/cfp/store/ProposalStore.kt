@@ -49,10 +49,8 @@ class ProposalStore {
     }
 
     fun updateProposal(id: Int, proposal: Proposal): Proposal {
-        if (!store.containsKey(id)) {
-            throw ResourceNotFoundException("Proposal with id $id not found")
-        }
-        val updated = proposal.copy(id = id)
+        val existing = store[id] ?: throw ResourceNotFoundException("Proposal with id $id not found")
+        val updated = proposal.copy(id = id, speakerId = existing.speakerId)
         store[id] = updated
         return updated
     }

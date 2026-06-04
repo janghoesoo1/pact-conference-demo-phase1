@@ -1,12 +1,15 @@
 package com.conference.attendee.controller
 
 import com.conference.attendee.client.SessionClient
+import com.conference.attendee.dto.AttendeeResponse
+import com.conference.attendee.dto.CreateAttendeeRequest
+import com.conference.attendee.dto.UpdateAttendeeRequest
 import com.conference.attendee.store.AttendeeStore
 import com.conference.common.model.ApiResponse
 import com.conference.common.model.Attendee
 import com.conference.common.model.Session
+import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -18,7 +21,6 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import java.net.URI
 
-@CrossOrigin(origins = ["*"])
 @RestController
 @RequestMapping("/attendees")
 class AttendeeController(
@@ -27,14 +29,14 @@ class AttendeeController(
 ) {
 
     @GetMapping
-    fun getAttendees(): ApiResponse<Attendee> {
-        val attendees = attendeeStore.getAttendees()
+    fun getAttendees(): ApiResponse<AttendeeResponse> {
+        val attendees = attendeeStore.getAttendees().map { AttendeeResponse.from(it) }
         return ApiResponse(data = attendees)
     }
 
     @GetMapping("/{id}")
-    fun getAttendee(@PathVariable id: Int): ResponseEntity<Attendee> {
-        return ResponseEntity.ok(attendeeStore.getAttendee(id))
+    fun getAttendee(@PathVariable id: Int): ResponseEntity<AttendeeResponse> {
+        return ResponseEntity.ok(AttendeeResponse.from(attendeeStore.getAttendee(id)))
     }
 
     @GetMapping("/{id}/sessions")
@@ -45,21 +47,26 @@ class AttendeeController(
     }
 
     @PostMapping
-    fun addAttendee(@RequestBody attendee: Attendee): ResponseEntity<Attendee> {
-        val saved = attendeeStore.addAttendee(attendee)
+    fun addAttendee(@Valid @RequestBody request: CreateAttendeeRequest): ResponseEntity<AttendeeResponse> {
+        val saved = attendeeStore.addAttendee(request.toDomain())
         val location: URI = ServletUriComponentsBuilder
             .fromCurrentRequest()
             .path("/{id}")
             .buildAndExpand(saved.id)
             .toUri()
-        return ResponseEntity.created(location).body(saved)
+        return ResponseEntity.created(location).body(AttendeeResponse.from(saved))
     }
 
     @PutMapping("/{id}")
     fun updateAttendee(
         @PathVariable id: Int,
-        @RequestBody attendee: Attendee
+        @Valid @RequestBody request: UpdateAttendeeRequest
     ): ResponseEntity<Void> {
+        val attendee = Attendee(
+            givenName = request.givenName,
+            surname = request.surname,
+            email = request.email
+        )
         attendeeStore.updateAttendee(id, attendee)
         return ResponseEntity.noContent().build()
     }

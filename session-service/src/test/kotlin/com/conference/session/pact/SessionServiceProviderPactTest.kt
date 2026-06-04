@@ -33,14 +33,14 @@ class SessionServiceProviderPactTest {
     private lateinit var sessionStore: SessionStoreInterface
 
     @BeforeEach
-    fun setUp(context: PactVerificationContext) {
-        context.target = HttpTestTarget("localhost", port)
+    fun setUp(context: PactVerificationContext?) {
+        context?.target = HttpTestTarget("localhost", port)
     }
 
     @TestTemplate
     @ExtendWith(PactVerificationInvocationContextProvider::class)
-    fun pactVerificationTestTemplate(context: PactVerificationContext) {
-        context.verifyInteraction()
+    fun pactVerificationTestTemplate(context: PactVerificationContext?) {
+        context?.verifyInteraction()
     }
 
     @State("세션 ID 1이 존재함")

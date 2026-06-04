@@ -1,14 +1,21 @@
 package com.conference.cfp.controller
 
 import com.conference.cfp.client.AttendeeClient
+import com.conference.cfp.dto.CreateProposalRequest
+import com.conference.cfp.dto.CreateVoteRequest
+import com.conference.cfp.dto.ProposalResponse
+import com.conference.cfp.dto.UpdateProposalRequest
+import com.conference.cfp.dto.VoteResponse
+import com.conference.cfp.dto.VoteSummaryResponse
 import com.conference.cfp.model.Proposal
+import com.conference.cfp.model.ProposalStatus
 import com.conference.cfp.model.Vote
 import com.conference.cfp.store.ProposalStore
 import com.conference.cfp.store.VoteStore
 import com.conference.common.exception.ResourceNotFoundException
 import com.conference.common.model.ApiResponse
+import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -20,12 +27,6 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import java.net.URI
 
-data class VoteSummary(
-    val votes: List<Vote>,
-    val averageScore: Double
-)
-
-@CrossOrigin(origins = ["*"])
 @RestController
 @RequestMapping("/proposals")
 class CfpController(
@@ -35,35 +36,42 @@ class CfpController(
 ) {
 
     @GetMapping
-    fun getProposals(): ResponseEntity<ApiResponse<Proposal>> {
-        val proposals = proposalStore.getProposals()
+    fun getProposals(): ResponseEntity<ApiResponse<ProposalResponse>> {
+        val proposals = proposalStore.getProposals().map { ProposalResponse.from(it) }
         return ResponseEntity.ok(ApiResponse(data = proposals))
     }
 
     @GetMapping("/{id}")
-    fun getProposal(@PathVariable id: Int): ResponseEntity<Proposal> {
+    fun getProposal(@PathVariable id: Int): ResponseEntity<ProposalResponse> {
         val proposal = proposalStore.getProposal(id)
-        return ResponseEntity.ok(proposal)
+        return ResponseEntity.ok(ProposalResponse.from(proposal))
     }
 
     @PostMapping
-    fun createProposal(@RequestBody proposal: Proposal): ResponseEntity<Proposal> {
-        attendeeClient.getAttendee(proposal.speakerId)
-            ?: throw ResourceNotFoundException("Attendee with id ${proposal.speakerId} not found")
-        val created = proposalStore.addProposal(proposal)
+    fun createProposal(@Valid @RequestBody request: CreateProposalRequest): ResponseEntity<ProposalResponse> {
+        attendeeClient.getAttendee(request.speakerId)
+            ?: throw ResourceNotFoundException("Attendee with id ${request.speakerId} not found")
+        val created = proposalStore.addProposal(request.toDomain())
         val location: URI = ServletUriComponentsBuilder
             .fromCurrentRequest()
             .path("/{id}")
             .buildAndExpand(created.id)
             .toUri()
-        return ResponseEntity.created(location).body(created)
+        return ResponseEntity.created(location).body(ProposalResponse.from(created))
     }
 
     @PutMapping("/{id}")
     fun updateProposal(
         @PathVariable id: Int,
-        @RequestBody proposal: Proposal
+        @Valid @RequestBody request: UpdateProposalRequest
     ): ResponseEntity<Void> {
+        val proposal = Proposal(
+            title = request.title,
+            abstract = request.abstract,
+            speakerId = 0,
+            status = request.status ?: ProposalStatus.SUBMITTED,
+            sessionId = request.sessionId
+        )
         proposalStore.updateProposal(id, proposal)
         return ResponseEntity.noContent().build()
     }
@@ -77,26 +85,26 @@ class CfpController(
     @PostMapping("/{id}/votes")
     fun addVote(
         @PathVariable id: Int,
-        @RequestBody vote: Vote
-    ): ResponseEntity<Vote> {
+        @Valid @RequestBody request: CreateVoteRequest
+    ): ResponseEntity<VoteResponse> {
         proposalStore.getProposal(id)
-        attendeeClient.getAttendee(vote.attendeeId)
-            ?: throw ResourceNotFoundException("Attendee with id ${vote.attendeeId} not found")
-        val voteWithProposalId = vote.copy(proposalId = id)
-        val created = voteStore.addVote(voteWithProposalId)
+        attendeeClient.getAttendee(request.attendeeId)
+            ?: throw ResourceNotFoundException("Attendee with id ${request.attendeeId} not found")
+        val vote = Vote(proposalId = id, attendeeId = request.attendeeId, score = request.score)
+        val created = voteStore.addVote(vote)
         val location: URI = ServletUriComponentsBuilder
             .fromCurrentRequest()
             .path("/{id}")
             .buildAndExpand(created.id)
             .toUri()
-        return ResponseEntity.created(location).body(created)
+        return ResponseEntity.created(location).body(VoteResponse.from(created))
     }
 
     @GetMapping("/{id}/votes")
-    fun getVotes(@PathVariable id: Int): ResponseEntity<VoteSummary> {
+    fun getVotes(@PathVariable id: Int): ResponseEntity<VoteSummaryResponse> {
         proposalStore.getProposal(id)
-        val votes = voteStore.getVotesByProposal(id)
+        val votes = voteStore.getVotesByProposal(id).map { VoteResponse.from(it) }
         val averageScore = voteStore.getAverageScore(id)
-        return ResponseEntity.ok(VoteSummary(votes = votes, averageScore = averageScore))
+        return ResponseEntity.ok(VoteSummaryResponse(votes = votes, averageScore = averageScore))
     }
 }
