@@ -5,6 +5,7 @@ plugins {
     kotlin("plugin.spring") version "1.9.25" apply false
     id("org.springframework.boot") version "3.3.6" apply false
     id("io.spring.dependency-management") version "1.1.6" apply false
+    id("au.com.dius.pact") version "4.6.14" apply false
 }
 
 allprojects {

@@ -44,4 +44,9 @@ class AttendeeStore {
         }
         store.remove(id)
     }
+
+    fun clear() {
+        store.clear()
+        nextId.set(1)
+    }
 }

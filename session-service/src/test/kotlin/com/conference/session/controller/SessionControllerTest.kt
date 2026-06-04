@@ -1,12 +1,10 @@
 package com.conference.session.controller
 
 import com.conference.common.exception.GlobalExceptionHandler
-import com.conference.common.exception.ResourceNotFoundException
 import com.conference.common.model.Session
-import com.conference.session.store.SessionStore
+import com.conference.session.store.SessionStoreInterface
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
-import io.mockk.justRun
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -25,7 +23,7 @@ class SessionControllerTest {
     private lateinit var mockMvc: MockMvc
 
     @MockkBean
-    private lateinit var sessionStore: SessionStore
+    private lateinit var sessionStore: SessionStoreInterface
 
     private val sampleSession = Session(
         id = 1,
@@ -66,13 +64,12 @@ class SessionControllerTest {
 
     @Test
     fun `GET sessions-id - 404 when not found`() {
-        every { sessionStore.getSession(999) } throws ResourceNotFoundException("Session with id 999 not found")
+        every { sessionStore.getSession(999) } returns null
 
         mockMvc.get("/sessions/999") {
             accept = MediaType.APPLICATION_JSON
         }.andExpect {
             status { isNotFound() }
-            jsonPath("$.error") { value("Session with id 999 not found") }
         }
     }
 
@@ -112,7 +109,7 @@ class SessionControllerTest {
 
     @Test
     fun `DELETE sessions-id - 200 OK`() {
-        justRun { sessionStore.removeSession(1) }
+        every { sessionStore.removeSession(1) } returns true
 
         mockMvc.delete("/sessions/1").andExpect {
             status { isOk() }

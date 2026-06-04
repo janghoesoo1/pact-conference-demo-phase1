@@ -2,7 +2,7 @@ package com.conference.session.controller
 
 import com.conference.common.model.ApiResponse
 import com.conference.common.model.Session
-import com.conference.session.store.SessionStore
+import com.conference.session.store.SessionStoreInterface
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -19,7 +19,7 @@ import java.net.URI
 @CrossOrigin(origins = ["*"])
 @RestController
 @RequestMapping("/sessions")
-class SessionController(private val sessionStore: SessionStore) {
+class SessionController(private val sessionStore: SessionStoreInterface) {
 
     @GetMapping
     fun getSessions(): ResponseEntity<ApiResponse<Session>> {
@@ -30,6 +30,7 @@ class SessionController(private val sessionStore: SessionStore) {
     @GetMapping("/{id}")
     fun getSession(@PathVariable id: Int): ResponseEntity<Session> {
         val session = sessionStore.getSession(id)
+            ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(session)
     }
 
@@ -50,12 +51,13 @@ class SessionController(private val sessionStore: SessionStore) {
         @RequestBody session: Session
     ): ResponseEntity<Void> {
         sessionStore.updateSession(id, session)
+            ?: return ResponseEntity.notFound().build()
         return ResponseEntity.noContent().build()
     }
 
     @DeleteMapping("/{id}")
     fun deleteSession(@PathVariable id: Int): ResponseEntity<Void> {
-        sessionStore.removeSession(id)
+        if (!sessionStore.removeSession(id)) return ResponseEntity.notFound().build()
         return ResponseEntity.ok().build()
     }
 

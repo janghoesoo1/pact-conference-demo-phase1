@@ -2,13 +2,15 @@ package com.conference.session.store
 
 import com.conference.common.exception.ResourceNotFoundException
 import com.conference.common.model.Session
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 @Component
-class SessionStore {
+@Profile("default")
+class SessionStore : SessionStoreInterface {
 
     private val counter = AtomicInteger(3)
     private val store: ConcurrentHashMap<Int, Session> = ConcurrentHashMap<Int, Session>().apply {
@@ -35,35 +37,31 @@ class SessionStore {
         ))
     }
 
-    fun getSessions(): List<Session> = store.values.toList()
+    override fun getSessions(): List<Session> = store.values.toList()
 
-    fun getSession(id: Int): Session =
-        store[id] ?: throw ResourceNotFoundException("Session with id $id not found")
+    override fun getSession(id: Int): Session? = store[id]
 
-    fun addSession(session: Session): Session {
+    override fun addSession(session: Session): Session {
         val id = counter.incrementAndGet()
         val newSession = session.copy(id = id)
         store[id] = newSession
         return newSession
     }
 
-    fun updateSession(id: Int, session: Session): Session {
-        if (!store.containsKey(id)) {
-            throw ResourceNotFoundException("Session with id $id not found")
-        }
+    override fun updateSession(id: Int, session: Session): Session? {
+        if (!store.containsKey(id)) return null
         val updated = session.copy(id = id)
         store[id] = updated
         return updated
     }
 
-    fun removeSession(id: Int) {
-        if (!store.containsKey(id)) {
-            throw ResourceNotFoundException("Session with id $id not found")
-        }
+    override fun removeSession(id: Int): Boolean {
+        if (!store.containsKey(id)) return false
         store.remove(id)
+        return true
     }
 
-    fun clear() {
+    override fun clear() {
         store.clear()
         counter.set(0)
     }

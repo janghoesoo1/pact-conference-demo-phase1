@@ -1,0 +1,9 @@
+server:
+  port: 8083
+spring:
+  application:
+    name: cfp-service
+session-service:
+  url: http://localhost:8082
+attendee-service:
+  url: http://localhost:8081

@@ -5,7 +5,6 @@ import com.conference.attendee.store.AttendeeStore
 import com.conference.common.model.ApiResponse
 import com.conference.common.model.Attendee
 import com.conference.common.model.Session
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -16,6 +15,8 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder
+import java.net.URI
 
 @CrossOrigin(origins = ["*"])
 @RestController
@@ -46,7 +47,12 @@ class AttendeeController(
     @PostMapping
     fun addAttendee(@RequestBody attendee: Attendee): ResponseEntity<Attendee> {
         val saved = attendeeStore.addAttendee(attendee)
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved)
+        val location: URI = ServletUriComponentsBuilder
+            .fromCurrentRequest()
+            .path("/{id}")
+            .buildAndExpand(saved.id)
+            .toUri()
+        return ResponseEntity.created(location).body(saved)
     }
 
     @PutMapping("/{id}")
