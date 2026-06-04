@@ -1,6 +1,7 @@
 package com.conference.cfp.controller
 
 import com.conference.cfp.client.AttendeeClient
+import com.conference.cfp.config.FeatureFlags
 import com.conference.cfp.dto.CreateProposalRequest
 import com.conference.cfp.dto.CreateVoteRequest
 import com.conference.cfp.dto.ProposalResponse
@@ -32,7 +33,8 @@ import java.net.URI
 class CfpController(
     private val proposalStore: ProposalStore,
     private val voteStore: VoteStore,
-    private val attendeeClient: AttendeeClient
+    private val attendeeClient: AttendeeClient,
+    private val featureFlags: FeatureFlags
 ) {
 
     @GetMapping
@@ -104,7 +106,11 @@ class CfpController(
     fun getVotes(@PathVariable id: Int): ResponseEntity<VoteSummaryResponse> {
         proposalStore.getProposal(id)
         val votes = voteStore.getVotesByProposal(id).map { VoteResponse.from(it) }
-        val averageScore = voteStore.getAverageScore(id)
+        val averageScore = if (featureFlags.newVotingAlgorithm) {
+            voteStore.getWeightedAverageScore(id)
+        } else {
+            voteStore.getAverageScore(id)
+        }
         return ResponseEntity.ok(VoteSummaryResponse(votes = votes, averageScore = averageScore))
     }
 }

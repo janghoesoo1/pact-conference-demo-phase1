@@ -1,6 +1,7 @@
 package com.conference.cfp.controller
 
 import com.conference.cfp.client.AttendeeClient
+import com.conference.cfp.config.FeatureFlags
 import com.conference.cfp.model.Proposal
 import com.conference.cfp.model.ProposalStatus
 import com.conference.cfp.model.Vote
@@ -36,6 +37,9 @@ class CfpControllerTest {
 
     @MockkBean
     private lateinit var attendeeClient: AttendeeClient
+
+    @MockkBean
+    private lateinit var featureFlags: FeatureFlags
 
     private val sampleProposal = Proposal(
         id = 1,
@@ -178,6 +182,7 @@ class CfpControllerTest {
         every { proposalStore.getProposal(1) } returns sampleProposal
         every { voteStore.getVotesByProposal(1) } returns listOf(sampleVote)
         every { voteStore.getAverageScore(1) } returns 5.0
+        every { featureFlags.newVotingAlgorithm } returns false
 
         mockMvc.get("/proposals/1/votes") {
             accept = MediaType.APPLICATION_JSON

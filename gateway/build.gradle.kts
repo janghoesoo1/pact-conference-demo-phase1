@@ -14,5 +14,6 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-gateway-mvc")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    runtimeOnly("io.micrometer:micrometer-registry-prometheus")
     implementation(project(":common"))
 }

@@ -26,6 +26,19 @@ class VoteStore {
         return if (votes.isEmpty()) 0.0 else votes.map { it.score }.average()
     }
 
+    fun getWeightedAverageScore(proposalId: Int): Double {
+        val votes = getVotesByProposal(proposalId)
+        if (votes.isEmpty()) return 0.0
+        val recentCount = 3
+        val recentVotes = votes.takeLast(recentCount)
+        val olderVotes = votes.dropLast(recentCount)
+        val weightedSum = recentVotes.sumOf { it.score * 2.0 } + olderVotes.sumOf { it.score * 1.0 }
+        val totalWeight = recentVotes.size * 2.0 + olderVotes.size * 1.0
+        return weightedSum / totalWeight
+    }
+
+    fun getAllVotes(): List<Vote> = store.values.toList()
+
     fun clear() {
         store.clear()
         counter.set(0)

@@ -7,3 +7,19 @@ session-service:
   url: http://localhost:8082
 attendee-service:
   url: http://localhost:8081
+
+features:
+  new-voting-algorithm: false
+  detailed-logging: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
