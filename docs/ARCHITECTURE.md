@@ -38,21 +38,12 @@
 
 ### 1.2 책 커버리지 진행
 
-```mermaid
-gantt
-    title Phase별 책 커버리지 확장
-    dateFormat  X
-    axisFormat  %s%%
-
-    section Phase 1
-    CDC 테스트 / 테스트 피라미드    :0, 25
-    section Phase 2
-    API Gateway / 보안 / OpenAPI    :25, 50
-    section Phase 3
-    Feature Flag / DDD / Observability :50, 65
-    section Phase 4
-    API Versioning / K8s / 성능 테스트 :65, 70
-```
+| Phase | 범위 | 커버리지 |
+|-------|------|---------|
+| Phase 1 | CDC 테스트 / 테스트 피라미드 | ~11% → ~25% |
+| Phase 2 | API Gateway / 보안 / OpenAPI | ~25% → ~50% |
+| Phase 3 | Feature Flag / DDD / Observability | ~50% → ~65% |
+| Phase 4 | API Versioning / K8s / 성능 테스트 | ~65% → ~70%+ |
 
 - **Phase 1 완료**: 책의 ~11% → ~25% (CDC 테스트, CFP 서비스, 테스트 피라미드)
 - **Phase 2 완료**: ~25% → ~50% (Gateway, DTO 분리, RFC 7807, JWT, OpenAPI, ADR)
@@ -84,29 +75,29 @@ graph TB
     end
 
     subgraph "API Gateway Layer"
-        GW["Gateway\n:8080\nSpring Cloud Gateway MVC\nJWT Auth / CORS / Rate Limit / Logging"]
+        GW["Gateway<br/>:8080<br/>Spring Cloud Gateway MVC<br/>JWT Auth / CORS / Rate Limit / Logging"]
     end
 
     subgraph "Business Services"
-        ATT["attendee-service\n:8081\nSpring Boot 3.3.6"]
-        SES["session-service\n:8082\nSpring Boot 3.3.6"]
-        CFP["cfp-service\n:8083\nSpring Boot 3.3.6"]
+        ATT["attendee-service<br/>:8081<br/>Spring Boot 3.3.6"]
+        SES["session-service<br/>:8082<br/>Spring Boot 3.3.6"]
+        CFP["cfp-service<br/>:8083<br/>Spring Boot 3.3.6"]
     end
 
     subgraph "Contract Testing Infrastructure"
-        PB["Pact Broker\n:9292\npactfoundation/pact-broker"]
-        PG["PostgreSQL\n:5432\npostgres:17-alpine"]
+        PB["Pact Broker<br/>:9292<br/>pactfoundation/pact-broker"]
+        PG["PostgreSQL<br/>:5432<br/>postgres:17-alpine"]
     end
 
     subgraph "Observability Stack"
-        PROM["Prometheus\n:9090"]
-        GRAF["Grafana\n:3000\n18 Panels"]
+        PROM["Prometheus<br/>:9090"]
+        GRAF["Grafana<br/>:3000<br/>18 Panels"]
     end
 
     Client -->|HTTPS| GW
-    GW -->|/api/attendees/**| ATT
-    GW -->|/api/sessions/**\n/api/v1/sessions/**\n/api/v2/sessions/**| SES
-    GW -->|/api/proposals/**| CFP
+    GW -->|"/attendees/**"| ATT
+    GW -->|"/sessions/** /v1/sessions/** /v2/sessions/**"| SES
+    GW -->|"/proposals/**"| CFP
 
     CFP -->|Consumer| SES
     CFP -->|Consumer| ATT
@@ -115,14 +106,14 @@ graph TB
     ATT -->|Publish Pact| PB
     CFP -->|Publish Pact| PB
     SES -->|Verify Pact| PB
-    ATT -->|Verify Pact (as Provider)| PB
+    ATT -->|"Verify Pact (as Provider)"| PB
 
     PB --> PG
 
-    GW -->|/actuator/prometheus| PROM
-    ATT -->|/actuator/prometheus| PROM
-    SES -->|/actuator/prometheus| PROM
-    CFP -->|/actuator/prometheus| PROM
+    GW -->|"/actuator/prometheus"| PROM
+    ATT -->|"/actuator/prometheus"| PROM
+    SES -->|"/actuator/prometheus"| PROM
+    CFP -->|"/actuator/prometheus"| PROM
     PROM --> GRAF
 ```
 
@@ -138,7 +129,7 @@ sequenceDiagram
 
     Note over Client,GW: 1. 클라이언트 요청 진입
 
-    Client->>GW: GET /api/attendees/1/sessions
+    Client->>GW: GET /attendees/1/sessions
     GW->>GW: JwtAuthFilter (GET → 통과)
     GW->>GW: LoggingFilter (요청 기록)
     GW->>ATT: GET /attendees/1/sessions (라우팅)
@@ -153,7 +144,7 @@ sequenceDiagram
 
     Note over Client,GW: 3. CFP 제안 생성 (JWT 필요)
 
-    Client->>GW: POST /api/proposals (Authorization: Bearer {token})
+    Client->>GW: POST /proposals (Authorization: Bearer {token})
     GW->>GW: JwtAuthFilter → JWT 검증
     GW->>GW: X-User-Id, X-User-Roles 헤더 추가
     GW->>CFP: POST /proposals
@@ -168,21 +159,21 @@ sequenceDiagram
 ```mermaid
 graph LR
     subgraph "Consumers"
-        ATT_C["AttendeeService\n(Consumer)"]
-        CFP_C["CfpService\n(Consumer)"]
+        ATT_C["AttendeeService<br/>(Consumer)"]
+        CFP_C["CfpService<br/>(Consumer)"]
     end
 
     subgraph "Providers"
-        SES_P["SessionService\n(Provider)"]
-        ATT_P["AttendeeService\n(Provider)"]
+        SES_P["SessionService<br/>(Provider)"]
+        ATT_P["AttendeeService<br/>(Provider)"]
     end
 
     subgraph "Pact Broker"
-        PB["Pact Broker :9292\n계약 저장 / 검증 결과 / can-i-deploy"]
+        PB["Pact Broker :9292<br/>계약 저장 / 검증 결과 / can-i-deploy"]
     end
 
-    ATT_C -->|"계약 정의\nGET /sessions\nGET /sessions/{id}"| PB
-    CFP_C -->|"계약 정의\nGET /sessions/{id}\nGET /attendees/{id}"| PB
+    ATT_C -->|"계약 정의 GET /sessions"| PB
+    CFP_C -->|"계약 정의 GET /sessions GET /attendees"| PB
 
     PB -->|"계약 검증"| SES_P
     PB -->|"계약 검증"| ATT_P
@@ -192,37 +183,37 @@ graph LR
 
 ```mermaid
 graph TD
-    ROOT["pact-conference-demo\n(Gradle Multi-Module)"]
+    ROOT["pact-conference-demo<br/>(Gradle Multi-Module)"]
 
-    ROOT --> COMMON["common\nShared Kernel"]
-    ROOT --> GW["gateway\nSpring Cloud Gateway MVC"]
-    ROOT --> ATT["attendee-service\nSpring Boot"]
-    ROOT --> SES["session-service\nSpring Boot"]
-    ROOT --> CFP["cfp-service\nSpring Boot"]
+    ROOT --> COMMON["common<br/>Shared Kernel"]
+    ROOT --> GW["gateway<br/>Spring Cloud Gateway MVC"]
+    ROOT --> ATT["attendee-service<br/>Spring Boot"]
+    ROOT --> SES["session-service<br/>Spring Boot"]
+    ROOT --> CFP["cfp-service<br/>Spring Boot"]
 
-    COMMON --> M1["model/\nSession, Attendee, ApiResponse"]
-    COMMON --> M2["exception/\nResourceNotFoundException\nGlobalExceptionHandler"]
-    COMMON --> M3["security/\nJwtUtil, UserContext\nRoleCheckInterceptor, RoleRequired"]
+    COMMON --> M1["model/<br/>Session, Attendee, ApiResponse"]
+    COMMON --> M2["exception/<br/>ResourceNotFoundException<br/>GlobalExceptionHandler"]
+    COMMON --> M3["security/<br/>JwtUtil, UserContext<br/>RoleCheckInterceptor, RoleRequired"]
 
-    GW --> G1["filter/\nJwtAuthFilter, LoggingFilter"]
-    GW --> G2["config/\nCorsConfig, RateLimitConfig"]
-    GW --> G3["controller/\nAuthController"]
+    GW --> G1["filter/<br/>JwtAuthFilter, LoggingFilter"]
+    GW --> G2["config/<br/>CorsConfig, RateLimitConfig"]
+    GW --> G3["controller/<br/>AuthController<br/>ProxyController"]
 
-    ATT --> A1["controller/\nAttendeeController"]
-    ATT --> A2["store/\nAttendeeStore"]
-    ATT --> A3["client/\nSessionClient"]
-    ATT --> A4["dto/\nAttendeeDto"]
+    ATT --> A1["controller/<br/>AttendeeController"]
+    ATT --> A2["store/<br/>AttendeeStore"]
+    ATT --> A3["client/<br/>SessionClient"]
+    ATT --> A4["dto/<br/>AttendeeDto"]
 
-    SES --> S1["controller/\nSessionController\nSessionV1Controller\nSessionV2Controller"]
-    SES --> S2["store/\nSessionStoreInterface\nSessionStore (InMemory)\nJpaSessionStore (JPA)"]
-    SES --> S3["dto/\nSessionDto, SessionV2Dto"]
-    SES --> S4["entity/\nSessionEntity"]
+    SES --> S1["controller/<br/>SessionController<br/>SessionV1Controller<br/>SessionV2Controller"]
+    SES --> S2["store/<br/>SessionStoreInterface<br/>SessionStore InMemory<br/>JpaSessionStore JPA"]
+    SES --> S3["dto/<br/>SessionDto, SessionV2Dto"]
+    SES --> S4["entity/<br/>SessionEntity"]
 
-    CFP --> C1["controller/\nCfpController"]
-    CFP --> C2["store/\nProposalStore, VoteStore"]
-    CFP --> C3["client/\nSessionClient, AttendeeClient"]
-    CFP --> C4["config/\nFeatureFlags"]
-    CFP --> C5["model/\nProposal, Vote"]
+    CFP --> C1["controller/<br/>CfpController"]
+    CFP --> C2["store/<br/>ProposalStore, VoteStore"]
+    CFP --> C3["client/<br/>SessionClient, AttendeeClient"]
+    CFP --> C4["config/<br/>FeatureFlags"]
+    CFP --> C5["model/<br/>Proposal, Vote"]
 ```
 
 ### 2.5 전체 디렉토리 구조
@@ -264,7 +255,8 @@ pact-conference-demo/
 │       │   │   │   ├── CorsConfig.kt
 │       │   │   │   └── RateLimitConfig.kt
 │       │   │   └── controller/
-│       │   │       └── AuthController.kt
+│       │   │       ├── AuthController.kt
+│       │   │       └── ProxyController.kt
 │       │   └── resources/application.yml
 │       └── test/kotlin/com/conference/gateway/
 │           └── RouteTest.kt
@@ -421,48 +413,48 @@ pact-conference-demo/
 
 ```mermaid
 flowchart TD
-    REQ([클라이언트 요청]) --> CORS{CORS\n허용 여부}
+    REQ([클라이언트 요청]) --> CORS{"CORS 허용 여부"}
     CORS -->|Preflight| CORS_RES([CORS Response])
-    CORS -->|Pass| RATE{Rate Limit\n초과?}
+    CORS -->|Pass| RATE{"Rate Limit 초과?"}
     RATE -->|초과| RATE_ERR([429 Too Many Requests])
-    RATE -->|통과| LOG[LoggingFilter\n요청 기록]
-    LOG --> PUBLIC{공개 경로?\n/actuator\n/swagger-ui\n/v3/api-docs\n/api/auth}
-    PUBLIC -->|Yes| ROUTE[Spring Cloud Gateway\nMVC 라우팅]
-    PUBLIC -->|No| METHOD{HTTP Method\n= GET?}
+    RATE -->|통과| LOG["LoggingFilter 요청 기록"]
+    LOG --> PUBLIC{"공개 경로? actuator swagger-ui v3/api-docs api/auth"}
+    PUBLIC -->|Yes| ROUTE["ProxyController ProxyExchange 라우팅"]
+    PUBLIC -->|No| METHOD{"HTTP Method = GET?"}
     METHOD -->|Yes| ROUTE
-    METHOD -->|No| JWT{Authorization\nBearer 헤더?}
-    JWT -->|없음| ERR401([401 Unauthorized\nProblemDetail])
-    JWT -->|있음| VALID{JWT 유효성\n검증}
-    VALID -->|실패| ERR401_2([401 Invalid Token\nProblemDetail])
-    VALID -->|성공| HEADER[X-User-Id / X-User-Roles\n헤더 추가]
+    METHOD -->|No| JWT{"Authorization Bearer 헤더?"}
+    JWT -->|없음| ERR401(["401 Unauthorized ProblemDetail"])
+    JWT -->|있음| VALID{"JWT 유효성 검증"}
+    VALID -->|실패| ERR401_2(["401 Invalid Token ProblemDetail"])
+    VALID -->|성공| HEADER["X-User-Id / X-User-Roles 헤더 추가"]
     HEADER --> ROUTE
-    ROUTE -->|/api/attendees/**| ATT[attendee-service\n:8081]
-    ROUTE -->|/api/sessions/**| SES[session-service\n:8082]
-    ROUTE -->|/api/proposals/**| CFP[cfp-service\n:8083]
-    ROUTE -->|/api/v1/sessions/**| SES_V1[session-service\n:8082 /v1]
-    ROUTE -->|/api/v2/sessions/**| SES_V2[session-service\n:8082 /v2]
+    ROUTE -->|"/attendees/**"| ATT["attendee-service :8081"]
+    ROUTE -->|"/sessions/**"| SES["session-service :8082"]
+    ROUTE -->|"/proposals/**"| CFP["cfp-service :8083"]
+    ROUTE -->|"/v1/sessions/**"| SES_V1["session-service :8082 v1"]
+    ROUTE -->|"/v2/sessions/**"| SES_V2["session-service :8082 v2"]
 ```
 
 ### 4.2 라우팅 규칙
 
-`gateway/src/main/resources/application.yml` 기준:
+`ProxyController` 기준:
 
 | Route ID | 경로 패턴 | 대상 서비스 |
 |----------|----------|-----------|
-| attendee-service | `/api/attendees/**` | `http://localhost:8081` |
-| session-service | `/api/sessions/**` | `http://localhost:8082` |
-| cfp-service | `/api/proposals/**` | `http://localhost:8083` |
-| session-service-v1 | `/api/v1/sessions/**` | `http://localhost:8082` |
-| session-service-v2 | `/api/v2/sessions/**` | `http://localhost:8082` |
+| attendee-service | `/attendees/**` | `http://localhost:8081` |
+| session-service | `/sessions/**` | `http://localhost:8082` |
+| cfp-service | `/proposals/**` | `http://localhost:8083` |
+| session-service-v1 | `/v1/sessions/**` | `http://localhost:8082` |
+| session-service-v2 | `/v2/sessions/**` | `http://localhost:8082` |
 
 ### 4.3 필터 체인
 
 ```mermaid
 graph LR
-    REQ([Request]) --> RL[RateLimitConfig\nOrder: Highest]
-    RL --> JWT_F[JwtAuthFilter\nOrder: Highest+1]
-    JWT_F --> LOG_F[LoggingFilter\nOrder: Highest+2]
-    LOG_F --> SCG[Spring Cloud Gateway\nMVC Router]
+    REQ([Request]) --> RL["RateLimitConfig<br/>Order: Highest"]
+    RL --> JWT_F["JwtAuthFilter<br/>Order: Highest+1"]
+    JWT_F --> LOG_F["LoggingFilter<br/>Order: Highest+2"]
+    LOG_F --> SCG["ProxyController<br/>ProxyExchange"]
     SCG --> RES([Response])
 ```
 
@@ -499,16 +491,16 @@ sequenceDiagram
     GW-->>C: {token: "eyJ..."}
 
     Note over C,GW: 2. 쓰기 작업 (JWT 필수)
-    C->>GW: POST /api/sessions\nAuthorization: Bearer eyJ...
+    C->>GW: POST /sessions Authorization: Bearer eyJ...
     GW->>GW: JwtAuthFilter.validateToken()
-    GW->>GW: claims 추출 (userId, roles)
-    GW->>DS: POST /sessions\nX-User-Id: 1\nX-User-Roles: ORGANIZER
-    DS->>DS: RoleCheckInterceptor\n@RoleRequired("ORGANIZER") 검증
+    GW->>GW: claims 추출 userId, roles
+    GW->>DS: POST /sessions X-User-Id: 1 X-User-Roles: ORGANIZER
+    DS->>DS: RoleCheckInterceptor @RoleRequired ORGANIZER 검증
     DS-->>GW: 201 Created
     GW-->>C: 201 Created
 
     Note over C,GW: 3. 읽기 작업 (JWT 불필요)
-    C->>GW: GET /api/sessions
+    C->>GW: GET /sessions
     GW->>GW: JwtAuthFilter: GET → 통과
     GW->>DS: GET /sessions
     DS-->>GW: 200 OK
@@ -550,10 +542,10 @@ Signature: HMACSHA256(base64(header) + "." + base64(payload), secret)
 
 ```mermaid
 graph LR
-    GW_H["Gateway\n(헤더 추가)"] -->|X-User-Id: 1\nX-User-Roles: ORGANIZER| RCI
-    RCI["RoleCheckInterceptor\n(preHandle)"] -->|UserContext.set()| TL[ThreadLocal]
-    TL -->|UserContext.get()| CTRL["Controller\n비즈니스 로직"]
-    CTRL -->|요청 완료| CLEANUP["RoleCheckInterceptor\n(afterCompletion)\nUserContext.clear()"]
+    GW_H["Gateway 헤더 추가"] -->|"X-User-Id: 1 X-User-Roles: ORGANIZER"| RCI
+    RCI["RoleCheckInterceptor preHandle"] -->|"UserContext.set()"| TL[ThreadLocal]
+    TL -->|"UserContext.get()"| CTRL["Controller 비즈니스 로직"]
+    CTRL -->|요청 완료| CLEANUP["RoleCheckInterceptor afterCompletion UserContext.clear()"]
 ```
 
 ---
@@ -606,24 +598,24 @@ graph LR
 ```mermaid
 graph LR
     subgraph "HTTP Layer"
-        CRQ[CreateXRequest\n@Valid + Jakarta Validation]
-        URQ[UpdateXRequest\n@Valid + Jakarta Validation]
-        RES[XResponse\n.from(domain) 팩토리]
+        CRQ["CreateXRequest<br/>@Valid + Jakarta Validation"]
+        URQ["UpdateXRequest<br/>@Valid + Jakarta Validation"]
+        RES["XResponse<br/>.from(domain) 팩토리"]
     end
 
     subgraph "Domain Layer"
-        DOM[Domain Model\nSession / Attendee / Proposal]
+        DOM["Domain Model<br/>Session / Attendee / Proposal"]
     end
 
     subgraph "Store Layer"
-        STORE[XStore\nConcurrentHashMap]
+        STORE["XStore<br/>ConcurrentHashMap"]
     end
 
-    CRQ -->|.toDomain()| DOM
+    CRQ -->|".toDomain()"| DOM
     URQ -->|필드 매핑| DOM
     DOM -->|저장| STORE
     STORE -->|조회| DOM
-    DOM -->|.from(domain)| RES
+    DOM -->|".from(domain)"| RES
 ```
 
 **예시 (Session)**:
@@ -677,12 +669,12 @@ data class CreateSessionRequest(
 
 ```mermaid
 graph TB
-    CTRL[SessionController] -->|의존| IFACE["SessionStoreInterface\n(추상화 계층)"]
+    CTRL[SessionController] -->|의존| IFACE["SessionStoreInterface<br/>추상화 계층"]
 
-    IFACE -->|"@Profile(default)"| MEM["SessionStore\n(InMemory)\nConcurrentHashMap"]
-    IFACE -->|"@Profile(jpa)"| JPA["JpaSessionStore\n(JPA)\nSpring Data JPA"]
+    IFACE -->|"@Profile default"| MEM["SessionStore<br/>InMemory<br/>ConcurrentHashMap"]
+    IFACE -->|"@Profile jpa"| JPA["JpaSessionStore<br/>JPA<br/>Spring Data JPA"]
 
-    JPA --> REPO["SessionJpaRepository\nextends JpaRepository"]
+    JPA --> REPO["SessionJpaRepository<br/>extends JpaRepository"]
     REPO --> DB[(PostgreSQL)]
 
     subgraph "Branch by Abstraction"
@@ -739,11 +731,11 @@ private val store: ConcurrentHashMap<Int, Session>  // Thread-safe 저장
 ```mermaid
 graph TB
     subgraph "Test Pyramid"
-        E2E["E2E / Manual Tests\n(최소화)"]
-        CONTRACT["Contract Tests\nConsumer + Provider\nPact JVM 4.6.14"]
-        COMPONENT["Component Tests\nREST-Assured\nSpringBootTest"]
-        INTEGRATION["Integration Tests\nTestcontainers\n(PostgreSQL)"]
-        UNIT["Unit Tests\nMockK + JUnit 5\n(가장 많음)"]
+        E2E["E2E / Manual Tests<br/>최소화"]
+        CONTRACT["Contract Tests<br/>Consumer + Provider<br/>Pact JVM 4.6.14"]
+        COMPONENT["Component Tests<br/>REST-Assured<br/>SpringBootTest"]
+        INTEGRATION["Integration Tests<br/>Testcontainers<br/>PostgreSQL"]
+        UNIT["Unit Tests<br/>MockK + JUnit 5<br/>가장 많음"]
     end
 
     E2E -.->|"느림/비용 높음"| CONTRACT
@@ -780,12 +772,12 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    participant CS as Consumer Test\n(AttendeeService / CfpService)
-    participant MS as Pact MockServer\n(자동 기동)
-    participant PF as Pact File\nbuild/pacts/*.json
-    participant PB as Pact Broker\n:9292
-    participant PS as Provider Test\n(SessionService)
-    participant RS as Real Server\n(SpringBootTest)
+    participant CS as Consumer Test (AttendeeService / CfpService)
+    participant MS as Pact MockServer (자동 기동)
+    participant PF as Pact File build/pacts
+    participant PB as Pact Broker :9292
+    participant PS as Provider Test (SessionService)
+    participant RS as Real Server (SpringBootTest)
 
     Note over CS,MS: Consumer Side
     CS->>MS: @Pact 어노테이션으로 계약 정의
@@ -888,16 +880,16 @@ cfp-service/build/pacts/*.json       ──┴──> attendee-service/build/pac
 ```mermaid
 graph LR
     subgraph "Business Services"
-        GW_S["Gateway\n:8080"]
-        ATT_S["Attendee\n:8081"]
-        SES_S["Session\n:8082"]
-        CFP_S["CFP\n:8083"]
+        GW_S["Gateway<br/>:8080"]
+        ATT_S["Attendee<br/>:8081"]
+        SES_S["Session<br/>:8082"]
+        CFP_S["CFP<br/>:8083"]
     end
 
     subgraph "Metrics Pipeline"
-        ACT["Spring Actuator\n/actuator/prometheus"]
-        PROM_S["Prometheus\n:9090\n15s scrape interval"]
-        GRAF_S["Grafana\n:3000\n18 Panels"]
+        ACT["Spring Actuator<br/>/actuator/prometheus"]
+        PROM_S["Prometheus<br/>:9090<br/>15s scrape interval"]
+        GRAF_S["Grafana<br/>:3000<br/>18 Panels"]
     end
 
     GW_S --> ACT
@@ -1034,17 +1026,17 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 graph TB
     subgraph "Kubernetes Cluster"
         subgraph "conference namespace"
-            GW_D["gateway\nDeployment\nreplicas: 1\n:8080"]
-            ATT_D["attendee-service\nDeployment\nreplicas: 1\n:8081"]
-            SES_D["session-service\nDeployment\nreplicas: 1\n:8082"]
-            CFP_D["cfp-service\nDeployment\nreplicas: 1\n:8083"]
+            GW_D["gateway<br/>Deployment<br/>replicas: 1<br/>:8080"]
+            ATT_D["attendee-service<br/>Deployment<br/>replicas: 1<br/>:8081"]
+            SES_D["session-service<br/>Deployment<br/>replicas: 1<br/>:8082"]
+            CFP_D["cfp-service<br/>Deployment<br/>replicas: 1<br/>:8083"]
         end
 
-        subgraph "Services (ClusterIP)"
-            GW_SVC["gateway\nService :8080"]
-            ATT_SVC["attendee-service\nService :8081"]
-            SES_SVC["session-service\nService :8082"]
-            CFP_SVC["cfp-service\nService :8083"]
+        subgraph "Services ClusterIP"
+            GW_SVC["gateway<br/>Service :8080"]
+            ATT_SVC["attendee-service<br/>Service :8081"]
+            SES_SVC["session-service<br/>Service :8082"]
+            CFP_SVC["cfp-service<br/>Service :8083"]
         end
     end
 
@@ -1072,17 +1064,17 @@ graph TB
 graph TB
     subgraph "Istio Service Mesh"
         subgraph "Traffic Management"
-            VS["VirtualService\n카나리 배포\nv1: 90% / v2: 10%"]
-            DR["DestinationRule\nv1, v2 subset 정의\n로드밸런싱 정책"]
+            VS["VirtualService<br/>카나리 배포<br/>v1: 90% v2: 10%"]
+            DR["DestinationRule<br/>v1, v2 subset 정의<br/>로드밸런싱 정책"]
         end
 
         subgraph "Security"
-            PA["PeerAuthentication\nmTLS STRICT 모드\n서비스 간 암호화"]
-            AP["AuthorizationPolicy\nGateway → Services만 허용\nService-to-Service 접근 제어"]
+            PA["PeerAuthentication<br/>mTLS STRICT 모드<br/>서비스 간 암호화"]
+            AP["AuthorizationPolicy<br/>Gateway to Services만 허용<br/>Service-to-Service 접근 제어"]
         end
 
         subgraph "Resilience"
-            FI["FaultInjection\nDelay / Abort 주입\n장애 시뮬레이션"]
+            FI["FaultInjection<br/>Delay / Abort 주입<br/>장애 시뮬레이션"]
         end
     end
 ```
@@ -1138,12 +1130,12 @@ services:
 ```mermaid
 graph LR
     subgraph "6R Migration Strategy"
-        RH["1. Rehost\n(Lift & Shift)\nDocker → ECS/GKE\n코드 변경 없음"]
-        RP["2. Replatform\n(Lift, Tinker, Shift)\nRDS / ElastiCache\n최소 변경"]
-        RPU["3. Repurchase\n(Drop & Shop)\nSaaS 대체\nAuth0 / Eventbrite"]
-        RF["4. Refactor\n(Re-architect)\n이벤트 기반\nKafka / SNS+SQS"]
-        RT["5. Retire\n(퇴역)\nv1 API 단계적 폐기"]
-        RN["6. Retain\n(유지)\n규제 요건 서비스\n온프레미스 유지"]
+        RH["1. Rehost<br/>Lift and Shift<br/>Docker to ECS/GKE<br/>코드 변경 없음"]
+        RP["2. Replatform<br/>Lift, Tinker, Shift<br/>RDS / ElastiCache<br/>최소 변경"]
+        RPU["3. Repurchase<br/>Drop and Shop<br/>SaaS 대체<br/>Auth0 / Eventbrite"]
+        RF["4. Refactor<br/>Re-architect<br/>이벤트 기반<br/>Kafka / SNS+SQS"]
+        RT["5. Retire<br/>퇴역<br/>v1 API 단계적 폐기"]
+        RN["6. Retain<br/>유지<br/>규제 요건 서비스<br/>온프레미스 유지"]
     end
 
     RH --> RP --> RF
@@ -1162,15 +1154,15 @@ Strangler Fig 패턴은 모놀리스를 점진적으로 마이크로서비스로
 ```mermaid
 graph TD
     subgraph "Phase 1: Facade 도입"
-        GW1["API Gateway\n(새로 도입)"]
-        MON1["레거시 모놀리스\n(기존)"]
+        GW1["API Gateway 새로 도입"]
+        MON1["레거시 모놀리스 기존"]
         GW1 -->|"모든 요청"| MON1
     end
 
     subgraph "Phase 2: 점진적 라우팅 전환"
         GW2["API Gateway"]
-        MON2["레거시 모놀리스\n(축소)"]
-        SES2["session-service\n(새로 추출)"]
+        MON2["레거시 모놀리스 축소"]
+        SES2["session-service 새로 추출"]
         GW2 -->|"/sessions/**"| SES2
         GW2 -->|"나머지"| MON2
     end
@@ -1192,9 +1184,9 @@ graph TD
 graph TB
     subgraph "Branch by Abstraction - 실제 구현"
         CTRL2["SessionController"]
-        IFACE2["SessionStoreInterface\n(추상화)"]
-        MEM2["SessionStore\n@Profile('default')\nConcurrentHashMap"]
-        JPA2["JpaSessionStore\n@Profile('jpa')\nSpring Data JPA"]
+        IFACE2["SessionStoreInterface 추상화"]
+        MEM2["SessionStore<br/>@Profile default<br/>ConcurrentHashMap"]
+        JPA2["JpaSessionStore<br/>@Profile jpa<br/>Spring Data JPA"]
         PG2[(PostgreSQL)]
 
         CTRL2 --> IFACE2
@@ -1253,11 +1245,11 @@ pie title Phase별 코드 변경량 (추가 라인)
 
 ```mermaid
 graph LR
-    P1["Phase 1\n기반 구축"]
-    P1 --> A["CFP 서비스\n(ProposalStore\nVoteStore\nCfpController)"]
-    P1 --> B["테스트 피라미드\n(Unit/Component\nIntegration/Contract)"]
-    P1 --> C["Pact CDC\n3쌍 Consumer\n2개 Provider"]
-    P1 --> D["Pact Broker\ndocker-compose"]
+    P1["Phase 1<br/>기반 구축"]
+    P1 --> A["CFP 서비스<br/>ProposalStore<br/>VoteStore<br/>CfpController"]
+    P1 --> B["테스트 피라미드<br/>Unit/Component<br/>Integration/Contract"]
+    P1 --> C["Pact CDC<br/>3쌍 Consumer<br/>2개 Provider"]
+    P1 --> D["Pact Broker<br/>docker-compose"]
 ```
 
 ### 13.2 Phase 2: Gateway + 보안 + API 설계 강화
@@ -1276,11 +1268,11 @@ graph LR
 
 ```mermaid
 graph LR
-    P2["Phase 2\n보안 + Gateway"]
-    P2 --> E["API Gateway\n(라우팅/CORS\nRate Limit)"]
-    P2 --> F["JWT + RBAC\n(JwtAuthFilter\nRoleCheckInterceptor)"]
-    P2 --> G["DTO 분리\n(RFC 7807\nInput Validation)"]
-    P2 --> H["OpenAPI 3.0\n(Swagger UI)"]
+    P2["Phase 2<br/>보안 + Gateway"]
+    P2 --> E["API Gateway<br/>라우팅/CORS<br/>Rate Limit"]
+    P2 --> F["JWT + RBAC<br/>JwtAuthFilter<br/>RoleCheckInterceptor"]
+    P2 --> G["DTO 분리<br/>RFC 7807<br/>Input Validation"]
+    P2 --> H["OpenAPI 3.0<br/>Swagger UI"]
 ```
 
 ### 13.3 Phase 3: Feature Flag + DDD + Observability
@@ -1298,11 +1290,11 @@ graph LR
 
 ```mermaid
 graph LR
-    P3["Phase 3\nObservability + DDD"]
-    P3 --> I["Feature Flags\n(ConfigurationProperties\n투표 알고리즘 분기)"]
-    P3 --> J["Observability\n(Micrometer\nPrometheus\nGrafana)"]
-    P3 --> K["DDD / C4\n(Bounded Context\nDomain Event)"]
-    P3 --> L["보안 문서\n(위협 모델\nRBAC 설계)"]
+    P3["Phase 3<br/>Observability + DDD"]
+    P3 --> I["Feature Flags<br/>ConfigurationProperties<br/>투표 알고리즘 분기"]
+    P3 --> J["Observability<br/>Micrometer<br/>Prometheus<br/>Grafana"]
+    P3 --> K["DDD / C4<br/>Bounded Context<br/>Domain Event"]
+    P3 --> L["보안 문서<br/>위협 모델<br/>RBAC 설계"]
 ```
 
 ### 13.4 Phase 4: API Versioning + 인프라 + 성능 테스트
@@ -1321,11 +1313,11 @@ graph LR
 
 ```mermaid
 graph LR
-    P4["Phase 4\nInfra + Versioning"]
-    P4 --> M["API Versioning\n(V1/V2 Controller\nSessionV2Dto)"]
-    P4 --> N["Docker / K8s\n(Dockerfile\nDeployment/Service)"]
-    P4 --> O["Istio Service Mesh\n(카나리 배포\nmTLS)"]
-    P4 --> P["성능 테스트\n클라우드 마이그레이션"]
+    P4["Phase 4<br/>Infra + Versioning"]
+    P4 --> M["API Versioning<br/>V1/V2 Controller<br/>SessionV2Dto"]
+    P4 --> N["Docker / K8s<br/>Dockerfile<br/>Deployment/Service"]
+    P4 --> O["Istio Service Mesh<br/>카나리 배포<br/>mTLS"]
+    P4 --> P["성능 테스트<br/>클라우드 마이그레이션"]
 ```
 
 ### 13.5 전체 누적 통계

@@ -63,6 +63,14 @@ class JwtAuthFilter : OncePerRequestFilter() {
                 }
             }
 
+            override fun getHeaders(name: String): java.util.Enumeration<String> {
+                return when (name) {
+                    "X-User-Id" -> java.util.Collections.enumeration(listOf(claims.userId.toString()))
+                    "X-User-Roles" -> java.util.Collections.enumeration(listOf(claims.roles.joinToString(",")))
+                    else -> super.getHeaders(name)
+                }
+            }
+
             override fun getHeaderNames(): java.util.Enumeration<String> {
                 val names = super.getHeaderNames().toList().toMutableList()
                 names.add("X-User-Id")

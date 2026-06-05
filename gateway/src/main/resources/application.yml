@@ -4,36 +4,20 @@ server:
 spring:
   application:
     name: gateway
-  cloud:
-    gateway:
-      mvc:
-        routes:
-          - id: attendee-service
-            uri: http://localhost:8081
-            predicates:
-              - Path=/api/attendees/**
-          - id: session-service
-            uri: http://localhost:8082
-            predicates:
-              - Path=/api/sessions/**
-          - id: cfp-service
-            uri: http://localhost:8083
-            predicates:
-              - Path=/api/proposals/**
-          - id: session-service-v1
-            uri: http://localhost:8082
-            predicates:
-              - Path=/api/v1/sessions/**
-          - id: session-service-v2
-            uri: http://localhost:8082
-            predicates:
-              - Path=/api/v2/sessions/**
+
+services:
+  session:
+    url: http://localhost:8082
+  attendee:
+    url: http://localhost:8081
+  cfp:
+    url: http://localhost:8083
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,gateway
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: always

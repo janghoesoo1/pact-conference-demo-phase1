@@ -16,7 +16,7 @@ services:
       retries: 5
 
   pact-broker:
-    image: pactfoundation/pact-broker:2.113.1.1
+    image: pactfoundation/pact-broker:latest
     depends_on:
       postgres:
         condition: service_healthy
