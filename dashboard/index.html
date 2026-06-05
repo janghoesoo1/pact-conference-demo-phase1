@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pact Conference Demo — Phase 1 Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    * { font-family: 'Inter', sans-serif; }
+    code, pre, .mono { font-family: 'JetBrains Mono', monospace; }
+
+    .gradient-header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .service-card {
+      transition: all 0.3s ease;
+      cursor: default;
+    }
+    .service-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+    .phase-bar {
+      height: 8px;
+      border-radius: 4px;
+      transition: width 1s ease;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-critical { background: #fee2e2; color: #dc2626; }
+    .badge-high     { background: #fef3c7; color: #d97706; }
+    .badge-medium   { background: #dbeafe; color: #2563eb; }
+    .badge-low      { background: #d1fae5; color: #059669; }
+    .badge-done     { background: #f0fdf4; color: #16a34a; }
+
+    .endpoint-method {
+      min-width: 56px;
+      text-align: center;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .method-get    { background: #dcfce7; color: #15803d; }
+    .method-post   { background: #dbeafe; color: #1d4ed8; }
+    .method-put    { background: #fef9c3; color: #a16207; }
+    .method-delete { background: #fee2e2; color: #dc2626; }
+
+    .pyramid-layer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: white;
+      clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
+      margin: 0 auto;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .tech-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border: 1px solid rgba(0,0,0,0.08);
+      transition: all 0.2s;
+    }
+    .tech-badge:hover {
+      transform: scale(1.03);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -33px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid;
+    }
+    .timeline-line {
+      position: absolute;
+      left: 6px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, #3b82f6, #8b5cf6, #ec4899, #10b981);
+    }
+
+    .mermaid-wrapper {
+      overflow-x: auto;
+    }
+    .mermaid { max-width: 100%; }
+
+    .coverage-ring {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .coverage-ring svg {
+      transform: rotate(-90deg);
+    }
+    .coverage-text {
+      position: absolute;
+      text-align: center;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+    .nav-link {
+      color: rgba(255,255,255,0.7);
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 6px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .nav-link:hover {
+      color: white;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1.5rem;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(to right, #3b82f6, transparent);
+      border-radius: 1px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<!-- ===== NAVIGATION ===== -->
+<nav class="gradient-header sticky top-0 z-50 shadow-lg">
+  <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white font-bold text-sm">P</div>
+      <span class="text-white font-bold text-lg">Pact Conference Demo</span>
+      <span class="badge" style="background: rgba(59,130,246,0.3); color: #93c5fd; margin-left: 4px;">Phase 1</span>
+    </div>
+    <div class="hidden md:flex items-center gap-1">
+      <a href="#architecture" class="nav-link">Architecture</a>
+      <a href="#phases" class="nav-link">Phases</a>
+      <a href="#modules" class="nav-link">Modules</a>
+      <a href="#endpoints" class="nav-link">API</a>
+      <a href="#tests" class="nav-link">Tests</a>
+      <a href="#docs" class="nav-link">Docs</a>
+      <a href="#quickstart" class="nav-link">Quick Start</a>
+      <a href="https://github.com" target="_blank" class="nav-link ml-2 border border-white/20">
+        <span>GitHub</span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== HERO HEADER ===== -->
+<header class="gradient-header text-white py-16 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+      <div>
+        <div class="flex items-center gap-3 mb-3">
+          <span class="badge" style="background: rgba(34,197,94,0.2); color: #86efac;">Production-Ready</span>
+          <span class="badge" style="background: rgba(168,85,247,0.2); color: #d8b4fe;">Consumer-Driven Contract Testing</span>
+        </div>
+        <h1 class="text-4xl md:text-5xl font-extrabold mb-3 tracking-tight">
+          Conference Management<br>
+          <span style="background: linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Microservices Platform</span>
+        </h1>
+        <p class="text-slate-300 text-lg max-w-xl leading-relaxed">
+          Spring Boot 3.3 + Kotlin + Pact JVM 기반의 마이크로서비스 아키텍처 데모.<br>
+          컨퍼런스 관리 시스템을 통해 CDC 테스팅 전략을 실습합니다.
+        </p>
+        <div class="flex flex-wrap gap-3 mt-6">
+          <div class="glass-card rounded-lg px-4 py-2 text-sm">
+            <span class="text-slate-400">서비스</span>
+            <span class="font-bold text-white ml-2">4개</span>
+          </div>
+          <div class="glass-card rounded-lg px-4 py-2 text-sm">
+            <span class="text-slate-400">API 엔드포인트</span>
+            <span class="font-bold text-white ml-2">26개</span>
+          </div>
+          <div class="glass-card rounded-lg px-4 py-2 text-sm">
+            <span class="text-slate-400">테스트</span>
+            <span class="font-bold text-white ml-2">~57개</span>
+          </div>
+          <div class="glass-card rounded-lg px-4 py-2 text-sm">
+            <span class="text-slate-400">문서</span>
+            <span class="font-bold text-white ml-2">30개+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Book Coverage Ring -->
+      <div class="glass-card rounded-2xl p-6 min-w-[220px] text-center">
+        <p class="text-slate-400 text-sm font-medium mb-4">교재 커버리지 향상</p>
+        <div class="flex items-center justify-center gap-6">
+          <!-- Before -->
+          <div class="text-center">
+            <div class="coverage-ring w-20 h-20">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#1e3a5f" stroke-width="8"/>
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#ef4444" stroke-width="8"
+                  stroke-dasharray="201" stroke-dashoffset="179" stroke-linecap="round"/>
+              </svg>
+              <div class="coverage-text">
+                <div class="text-lg font-bold text-red-400">11%</div>
+              </div>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">Before</p>
+          </div>
+          <div class="text-2xl text-slate-500 font-light">→</div>
+          <!-- After -->
+          <div class="text-center">
+            <div class="coverage-ring w-20 h-20">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#1e3a5f" stroke-width="8"/>
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#22c55e" stroke-width="8"
+                  stroke-dasharray="201" stroke-dashoffset="59" stroke-linecap="round"/>
+              </svg>
+              <div class="coverage-text">
+                <div class="text-lg font-bold text-green-400">70%+</div>
+              </div>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">After</p>
+          </div>
+        </div>
+        <div class="mt-4 text-xs text-slate-400">
+          126개 → 30개+ 파일 커버<br>
+          4,970 라인 추가
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-6 py-12 space-y-16">
+
+  <!-- ===== ARCHITECTURE DIAGRAM ===== -->
+  <section id="architecture">
+    <h2 class="section-title">
+      <span class="text-2xl">🏗</span> 시스템 아키텍처
+    </h2>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+graph TB
+    Client["👤 Client\n(Browser / API Client)"]
+
+    subgraph Gateway["API Gateway Layer (Port 8080)"]
+        GW["Spring Cloud Gateway MVC\n🔐 JWT Authentication\n🔀 Route & LB"]
+    end
+
+    subgraph Services["Business Services"]
+        AS["Attendee Service\nPort 8081\n참석자 관리"]
+        SS["Session Service\nPort 8082\nAPI Versioning v1/v2"]
+        CS["CFP Service\nPort 8083\n제안 & 투표"]
+    end
+
+    subgraph Common["Common Module"]
+        CM["Shared Kernel\n공통 DTO / 예외 / 유틸"]
+    end
+
+    subgraph Infrastructure["Infrastructure"]
+        PB["Pact Broker\nPort 9292\nContract Registry"]
+        PG["PostgreSQL\nPort 5432"]
+        PR["Prometheus\nPort 9090"]
+        GF["Grafana\nPort 3000"]
+    end
+
+    Client -->|HTTPS| GW
+    GW -->|HTTP| AS
+    GW -->|HTTP| SS
+    GW -->|HTTP| CS
+
+    AS -.->|depends| CM
+    SS -.->|depends| CM
+    CS -.->|depends| CM
+
+    CS -->|Contract| PB
+    AS -->|Contract| PB
+    SS -->|Contract| PB
+
+    AS -->|/actuator/prometheus| PR
+    SS -->|/actuator/prometheus| PR
+    CS -->|/actuator/prometheus| PR
+    GW -->|/actuator/prometheus| PR
+    PR --> GF
+
+    style Client fill:#f0f9ff,stroke:#0284c7,color:#0c4a6e
+    style GW fill:#fef3c7,stroke:#d97706,color:#92400e
+    style AS fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    style SS fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    style CS fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    style CM fill:#faf5ff,stroke:#9333ea,color:#581c87
+    style PB fill:#fff7ed,stroke:#ea580c,color:#7c2d12
+    style PG fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a
+    style PR fill:#fff7ed,stroke:#f97316,color:#7c2d12
+    style GF fill:#fdf4ff,stroke:#a855f7,color:#581c87
+        </div>
+      </div>
+      <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 text-center">
+          <div class="text-amber-700 font-bold text-sm">Gateway</div>
+          <div class="text-amber-600 text-xs mt-1">JWT + 라우팅</div>
+          <div class="mono text-amber-800 font-bold text-lg mt-1">:8080</div>
+        </div>
+        <div class="bg-green-50 border border-green-100 rounded-xl p-4 text-center">
+          <div class="text-green-700 font-bold text-sm">Business Services</div>
+          <div class="text-green-600 text-xs mt-1">Attendee / Session / CFP</div>
+          <div class="mono text-green-800 font-bold text-lg mt-1">:8081-8083</div>
+        </div>
+        <div class="bg-orange-50 border border-orange-100 rounded-xl p-4 text-center">
+          <div class="text-orange-700 font-bold text-sm">Pact Broker</div>
+          <div class="text-orange-600 text-xs mt-1">Contract Registry</div>
+          <div class="mono text-orange-800 font-bold text-lg mt-1">:9292</div>
+        </div>
+        <div class="bg-purple-50 border border-purple-100 rounded-xl p-4 text-center">
+          <div class="text-purple-700 font-bold text-sm">Monitoring</div>
+          <div class="text-purple-600 text-xs mt-1">Prometheus + Grafana</div>
+          <div class="mono text-purple-800 font-bold text-lg mt-1">:9090/:3000</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PHASE TIMELINE ===== -->
+  <section id="phases">
+    <h2 class="section-title">
+      <span class="text-2xl">📅</span> Phase 로드맵
+    </h2>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+      <!-- Summary Row -->
+      <div class="grid grid-cols-4 gap-4 mb-10">
+        <div class="rounded-xl p-4 border-2 border-red-200 bg-red-50">
+          <div class="flex items-center justify-between mb-2">
+            <span class="badge badge-critical">CRITICAL</span>
+            <span class="text-green-600 font-bold text-sm">✓ Done</span>
+          </div>
+          <div class="text-2xl font-extrabold text-slate-800 mt-2">Phase 1</div>
+          <div class="text-xs text-slate-500 mt-1">CFP + Test Pyramid + Pact</div>
+          <div class="text-xs font-semibold text-red-600 mt-2">36 파일 · +1,711줄</div>
+        </div>
+        <div class="rounded-xl p-4 border-2 border-amber-200 bg-amber-50">
+          <div class="flex items-center justify-between mb-2">
+            <span class="badge badge-high">HIGH</span>
+            <span class="text-green-600 font-bold text-sm">✓ Done</span>
+          </div>
+          <div class="text-2xl font-extrabold text-slate-800 mt-2">Phase 2</div>
+          <div class="text-xs text-slate-500 mt-1">Gateway + DTO + JWT + OpenAPI</div>
+          <div class="text-xs font-semibold text-amber-600 mt-2">38 파일 · +1,016줄</div>
+        </div>
+        <div class="rounded-xl p-4 border-2 border-blue-200 bg-blue-50">
+          <div class="flex items-center justify-between mb-2">
+            <span class="badge badge-medium">MEDIUM</span>
+            <span class="text-green-600 font-bold text-sm">✓ Done</span>
+          </div>
+          <div class="text-2xl font-extrabold text-slate-800 mt-2">Phase 3</div>
+          <div class="text-xs text-slate-500 mt-1">Feature Flag + DDD/C4 + Observability</div>
+          <div class="text-xs font-semibold text-blue-600 mt-2">26 파일 · +882줄</div>
+        </div>
+        <div class="rounded-xl p-4 border-2 border-green-200 bg-green-50">
+          <div class="flex items-center justify-between mb-2">
+            <span class="badge badge-low">LOW</span>
+            <span class="text-green-600 font-bold text-sm">✓ Done</span>
+          </div>
+          <div class="text-2xl font-extrabold text-slate-800 mt-2">Phase 4</div>
+          <div class="text-xs text-slate-500 mt-1">API Versioning + Infra + Performance</div>
+          <div class="text-xs font-semibold text-green-600 mt-2">26 파일 · +1,361줄</div>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="relative pl-10">
+        <div class="timeline-line"></div>
+
+        <!-- Phase 1 -->
+        <div class="relative mb-8">
+          <div class="timeline-item relative bg-red-50 border border-red-200 rounded-xl p-5" style="border-left: 4px solid #ef4444;">
+            <div class="absolute -left-[33px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-red-500 border-2 border-white shadow"></div>
+            <div class="flex flex-wrap items-start gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-bold text-red-700">Phase 1</span>
+                  <span class="badge badge-critical">CRITICAL</span>
+                  <span class="badge badge-done">완료</span>
+                </div>
+                <div class="text-slate-700 font-medium">CFP 서비스 + 테스트 피라미드 + Pact Broker</div>
+                <div class="text-sm text-slate-500 mt-1">Consumer-Driven Contract Testing 핵심 구현. Pact JVM으로 서비스 간 계약 검증.</div>
+              </div>
+              <div class="text-right">
+                <div class="text-2xl font-extrabold text-red-600">36</div>
+                <div class="text-xs text-slate-500">파일</div>
+                <div class="text-sm font-bold text-slate-700 mt-1">+1,711줄</div>
+              </div>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span class="mono text-xs bg-red-100 text-red-700 px-2 py-1 rounded">CfpController</span>
+              <span class="mono text-xs bg-red-100 text-red-700 px-2 py-1 rounded">PactConsumerTest</span>
+              <span class="mono text-xs bg-red-100 text-red-700 px-2 py-1 rounded">ProviderVerification</span>
+              <span class="mono text-xs bg-red-100 text-red-700 px-2 py-1 rounded">ComponentTest</span>
+              <span class="mono text-xs bg-red-100 text-red-700 px-2 py-1 rounded">TestContainers</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="relative mb-8">
+          <div class="timeline-item relative bg-amber-50 border border-amber-200 rounded-xl p-5" style="border-left: 4px solid #f59e0b;">
+            <div class="absolute -left-[33px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-amber-500 border-2 border-white shadow"></div>
+            <div class="flex flex-wrap items-start gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-bold text-amber-700">Phase 2</span>
+                  <span class="badge badge-high">HIGH</span>
+                  <span class="badge badge-done">완료</span>
+                </div>
+                <div class="text-slate-700 font-medium">Gateway + DTO + RFC 7807 + JWT + OpenAPI + ADR</div>
+                <div class="text-sm text-slate-500 mt-1">API 게이트웨이 구현, JWT 자체 발급, OpenAPI 문서화, Architecture Decision Record 작성.</div>
+              </div>
+              <div class="text-right">
+                <div class="text-2xl font-extrabold text-amber-600">38</div>
+                <div class="text-xs text-slate-500">파일</div>
+                <div class="text-sm font-bold text-slate-700 mt-1">+1,016줄</div>
+              </div>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span class="mono text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">Spring Cloud Gateway MVC</span>
+              <span class="mono text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">JWT (JJWT 0.12.6)</span>
+              <span class="mono text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">RFC 7807 ProblemDetail</span>
+              <span class="mono text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">SpringDoc OpenAPI</span>
+              <span class="mono text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">ADR-001~006</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="relative mb-8">
+          <div class="timeline-item relative bg-blue-50 border border-blue-200 rounded-xl p-5" style="border-left: 4px solid #3b82f6;">
+            <div class="absolute -left-[33px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
+            <div class="flex flex-wrap items-start gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-bold text-blue-700">Phase 3</span>
+                  <span class="badge badge-medium">MEDIUM</span>
+                  <span class="badge badge-done">완료</span>
+                </div>
+                <div class="text-slate-700 font-medium">Feature Flag + DDD/C4/보안 문서 + Observability</div>
+                <div class="text-sm text-slate-500 mt-1">도메인 주도 설계 문서화, C4 모델 다이어그램, 위협 모델링, 관찰 가능성 구현.</div>
+              </div>
+              <div class="text-right">
+                <div class="text-2xl font-extrabold text-blue-600">26</div>
+                <div class="text-xs text-slate-500">파일</div>
+                <div class="text-sm font-bold text-slate-700 mt-1">+882줄</div>
+              </div>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span class="mono text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">FeatureFlagService</span>
+              <span class="mono text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">DDD Context Map</span>
+              <span class="mono text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">C4 Level 1~3</span>
+              <span class="mono text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">THREAT_MODEL</span>
+              <span class="mono text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Micrometer Prometheus</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 4 -->
+        <div class="relative">
+          <div class="timeline-item relative bg-green-50 border border-green-200 rounded-xl p-5" style="border-left: 4px solid #10b981;">
+            <div class="absolute -left-[33px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow"></div>
+            <div class="flex flex-wrap items-start gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-bold text-emerald-700">Phase 4</span>
+                  <span class="badge badge-low">LOW</span>
+                  <span class="badge badge-done">완료</span>
+                </div>
+                <div class="text-slate-700 font-medium">API Versioning + 인프라 + 성능 테스트 + 문서</div>
+                <div class="text-sm text-slate-500 mt-1">URL 기반 API 버저닝(v1/v2), Kubernetes 배포, k6 성능 테스트, Service Mesh 문서화.</div>
+              </div>
+              <div class="text-right">
+                <div class="text-2xl font-extrabold text-emerald-600">26</div>
+                <div class="text-xs text-slate-500">파일</div>
+                <div class="text-sm font-bold text-slate-700 mt-1">+1,361줄</div>
+              </div>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span class="mono text-xs bg-green-100 text-green-700 px-2 py-1 rounded">API v1/v2 Versioning</span>
+              <span class="mono text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Kubernetes YAML</span>
+              <span class="mono text-xs bg-green-100 text-green-700 px-2 py-1 rounded">k6 Load Test</span>
+              <span class="mono text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Istio Service Mesh</span>
+              <span class="mono text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Performance Test</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Stats -->
+      <div class="mt-8 grid grid-cols-3 gap-4 bg-slate-50 rounded-xl p-5">
+        <div class="text-center">
+          <div class="text-3xl font-extrabold text-slate-800">126</div>
+          <div class="text-sm text-slate-500 mt-1">총 파일 수</div>
+        </div>
+        <div class="text-center border-x border-slate-200">
+          <div class="text-3xl font-extrabold text-slate-800">4,970</div>
+          <div class="text-sm text-slate-500 mt-1">추가 라인</div>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl font-extrabold text-slate-800">4</div>
+          <div class="text-sm text-slate-500 mt-1">완료 Phase</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MODULE OVERVIEW ===== -->
+  <section id="modules">
+    <h2 class="section-title">
+      <span class="text-2xl">📦</span> 모듈 Overview
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      <!-- Gateway -->
+      <div class="service-card bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:border-amber-200">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-xl mb-3">🔀</div>
+            <h3 class="font-bold text-slate-800 text-lg">Gateway</h3>
+            <p class="text-slate-500 text-sm">Spring Cloud Gateway MVC</p>
+          </div>
+          <span class="mono text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-bold">:8080</span>
+        </div>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> JWT 토큰 발급 / 검증
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> 요청 라우팅 (리버스 프록시)
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> 인증 필터 체인
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> Actuator Health / Prometheus
+          </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-slate-100">
+          <div class="flex justify-between text-xs text-slate-500">
+            <span>엔드포인트</span>
+            <span class="font-bold text-slate-700">1개 (인증)</span>
+          </div>
+          <div class="flex justify-between text-xs text-slate-500 mt-1">
+            <span>역할</span>
+            <span class="font-bold text-slate-700">API Gateway + Auth</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attendee Service -->
+      <div class="service-card bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:border-green-200">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center text-xl mb-3">👥</div>
+            <h3 class="font-bold text-slate-800 text-lg">Attendee Service</h3>
+            <p class="text-slate-500 text-sm">참석자 관리 서비스</p>
+          </div>
+          <span class="mono text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg font-bold">:8081</span>
+        </div>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> 참석자 CRUD 관리
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> 세션 수강 이력 조회
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> Pact Consumer 계약
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> OpenAPI (Swagger UI)
+          </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-slate-100">
+          <div class="flex justify-between text-xs text-slate-500">
+            <span>엔드포인트</span>
+            <span class="font-bold text-slate-700">6개</span>
+          </div>
+          <div class="flex justify-between text-xs text-slate-500 mt-1">
+            <span>Swagger UI</span>
+            <span class="font-mono text-blue-600">:8081/swagger-ui.html</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Session Service -->
+      <div class="service-card bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:border-blue-200">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-xl mb-3">📋</div>
+            <h3 class="font-bold text-slate-800 text-lg">Session Service</h3>
+            <p class="text-slate-500 text-sm">세션 관리 + API Versioning</p>
+          </div>
+          <span class="mono text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-lg font-bold">:8082</span>
+        </div>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> 세션 CRUD 관리
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> API Versioning (v1 / v2)
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> Feature Flag 지원
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> Pact Provider 검증
+          </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-slate-100">
+          <div class="flex justify-between text-xs text-slate-500">
+            <span>엔드포인트</span>
+            <span class="font-bold text-slate-700">9개 (v1/v2 포함)</span>
+          </div>
+          <div class="flex justify-between text-xs text-slate-500 mt-1">
+            <span>Swagger UI</span>
+            <span class="font-mono text-blue-600">:8082/swagger-ui.html</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CFP Service -->
+      <div class="service-card bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:border-purple-200">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-xl mb-3">🎤</div>
+            <h3 class="font-bold text-slate-800 text-lg">CFP Service</h3>
+            <p class="text-slate-500 text-sm">Call for Proposals</p>
+          </div>
+          <span class="mono text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-lg font-bold">:8083</span>
+        </div>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> 발표 제안 CRUD
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> 투표 기능 (Vote)
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> Pact Consumer 계약
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> Component Test (Testcontainers)
+          </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-slate-100">
+          <div class="flex justify-between text-xs text-slate-500">
+            <span>엔드포인트</span>
+            <span class="font-bold text-slate-700">7개</span>
+          </div>
+          <div class="flex justify-between text-xs text-slate-500 mt-1">
+            <span>Swagger UI</span>
+            <span class="font-mono text-blue-600">:8083/swagger-ui.html</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Common Module -->
+      <div class="service-card bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:border-slate-300">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-xl mb-3">🔧</div>
+            <h3 class="font-bold text-slate-800 text-lg">Common Module</h3>
+            <p class="text-slate-500 text-sm">Shared Kernel</p>
+          </div>
+          <span class="mono text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-lg font-bold">lib</span>
+        </div>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> 공통 DTO / Response 래퍼
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> RFC 7807 ProblemDetail
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> 공통 예외 처리
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> 유틸리티 클래스
+          </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-slate-100">
+          <div class="flex justify-between text-xs text-slate-500">
+            <span>역할</span>
+            <span class="font-bold text-slate-700">공유 라이브러리</span>
+          </div>
+          <div class="flex justify-between text-xs text-slate-500 mt-1">
+            <span>패턴</span>
+            <span class="font-bold text-slate-700">Shared Kernel DDD</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Infra -->
+      <div class="service-card bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:border-orange-200">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-xl mb-3">🐳</div>
+            <h3 class="font-bold text-slate-800 text-lg">Infrastructure</h3>
+            <p class="text-slate-500 text-sm">Docker + Kubernetes</p>
+          </div>
+          <span class="mono text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-lg font-bold">infra</span>
+        </div>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> Docker Compose (Postgres + Pact)
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> Prometheus + Grafana
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> Kubernetes Deployment YAML
+          </div>
+          <div class="flex items-center gap-2 text-slate-600">
+            <span class="text-green-500">✓</span> Istio Service Mesh 설정
+          </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-slate-100">
+          <div class="flex justify-between text-xs text-slate-500">
+            <span>Pact Broker</span>
+            <span class="font-mono text-blue-600">:9292</span>
+          </div>
+          <div class="flex justify-between text-xs text-slate-500 mt-1">
+            <span>Grafana</span>
+            <span class="font-mono text-blue-600">:3000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== API ENDPOINTS ===== -->
+  <section id="endpoints">
+    <h2 class="section-title">
+      <span class="text-2xl">🔌</span> API 엔드포인트
+    </h2>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+
+      <!-- Gateway -->
+      <div class="border-b border-slate-100">
+        <div class="bg-amber-50 px-6 py-3 flex items-center gap-3">
+          <span class="mono font-bold text-amber-700 text-sm">Gateway</span>
+          <span class="text-slate-400 text-xs">:8080</span>
+          <span class="ml-auto text-xs text-slate-500">1 endpoint</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <tbody>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3 w-24"><span class="endpoint-method method-post">POST</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/api/auth/token</td>
+                <td class="px-4 py-3 text-slate-500">JWT 토큰 발급</td>
+                <td class="px-4 py-3 text-right"><span class="badge" style="background:#fef9c3; color:#854d0e;">Auth</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Attendee Service -->
+      <div class="border-b border-slate-100">
+        <div class="bg-green-50 px-6 py-3 flex items-center gap-3">
+          <span class="mono font-bold text-green-700 text-sm">Attendee Service</span>
+          <span class="text-slate-400 text-xs">:8081</span>
+          <span class="ml-auto text-xs text-slate-500">6 endpoints</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <tbody>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3 w-24"><span class="endpoint-method method-get">GET</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/attendees</td>
+                <td class="px-4 py-3 text-slate-500">참석자 목록 조회</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-medium">List</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-get">GET</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/attendees/{id}</td>
+                <td class="px-4 py-3 text-slate-500">참석자 상세 조회</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-medium">Detail</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-post">POST</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/attendees</td>
+                <td class="px-4 py-3 text-slate-500">참석자 등록</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-done">Create</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-put">PUT</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/attendees/{id}</td>
+                <td class="px-4 py-3 text-slate-500">참석자 정보 수정</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-high">Update</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-delete">DELETE</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/attendees/{id}</td>
+                <td class="px-4 py-3 text-slate-500">참석자 삭제</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-critical">Delete</span></td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-get">GET</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/attendees/{id}/sessions</td>
+                <td class="px-4 py-3 text-slate-500">참석자의 세션 목록</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-medium">Relation</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Session Service -->
+      <div class="border-b border-slate-100">
+        <div class="bg-blue-50 px-6 py-3 flex items-center gap-3">
+          <span class="mono font-bold text-blue-700 text-sm">Session Service</span>
+          <span class="text-slate-400 text-xs">:8082</span>
+          <span class="ml-auto text-xs text-slate-500">9 endpoints (v1/v2 포함)</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <tbody>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3 w-24"><span class="endpoint-method method-get">GET</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/sessions</td>
+                <td class="px-4 py-3 text-slate-500">세션 목록 조회</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-medium">List</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-get">GET</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/sessions/{id}</td>
+                <td class="px-4 py-3 text-slate-500">세션 상세 조회</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-medium">Detail</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-post">POST</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/sessions</td>
+                <td class="px-4 py-3 text-slate-500">세션 생성</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-done">Create</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-put">PUT</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/sessions/{id}</td>
+                <td class="px-4 py-3 text-slate-500">세션 수정</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-high">Update</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-delete">DELETE</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/sessions/{id}</td>
+                <td class="px-4 py-3 text-slate-500">세션 삭제</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-critical">Delete</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50 bg-blue-50/30">
+                <td class="px-6 py-3"><span class="endpoint-method method-get">GET</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/v1/sessions</td>
+                <td class="px-4 py-3 text-slate-500">V1 세션 목록 (기본 필드)</td>
+                <td class="px-4 py-3 text-right"><span class="badge" style="background:#dbeafe; color:#1d4ed8;">v1</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50 bg-blue-50/30">
+                <td class="px-6 py-3"><span class="endpoint-method method-get">GET</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/v1/sessions/{id}</td>
+                <td class="px-4 py-3 text-slate-500">V1 세션 상세</td>
+                <td class="px-4 py-3 text-right"><span class="badge" style="background:#dbeafe; color:#1d4ed8;">v1</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50 bg-violet-50/30">
+                <td class="px-6 py-3"><span class="endpoint-method method-get">GET</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/v2/sessions</td>
+                <td class="px-4 py-3 text-slate-500">V2 세션 목록 (확장 필드)</td>
+                <td class="px-4 py-3 text-right"><span class="badge" style="background:#ede9fe; color:#7c3aed;">v2</span></td>
+              </tr>
+              <tr class="hover:bg-slate-50 bg-violet-50/30">
+                <td class="px-6 py-3"><span class="endpoint-method method-get">GET</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/v2/sessions/{id}</td>
+                <td class="px-4 py-3 text-slate-500">V2 세션 상세 (확장 필드)</td>
+                <td class="px-4 py-3 text-right"><span class="badge" style="background:#ede9fe; color:#7c3aed;">v2</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CFP Service -->
+      <div>
+        <div class="bg-purple-50 px-6 py-3 flex items-center gap-3">
+          <span class="mono font-bold text-purple-700 text-sm">CFP Service</span>
+          <span class="text-slate-400 text-xs">:8083</span>
+          <span class="ml-auto text-xs text-slate-500">7 endpoints</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <tbody>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3 w-24"><span class="endpoint-method method-get">GET</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/proposals</td>
+                <td class="px-4 py-3 text-slate-500">제안 목록 조회</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-medium">List</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-get">GET</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/proposals/{id}</td>
+                <td class="px-4 py-3 text-slate-500">제안 상세 조회</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-medium">Detail</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-post">POST</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/proposals</td>
+                <td class="px-4 py-3 text-slate-500">제안 등록</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-done">Create</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-put">PUT</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/proposals/{id}</td>
+                <td class="px-4 py-3 text-slate-500">제안 수정</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-high">Update</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-delete">DELETE</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/proposals/{id}</td>
+                <td class="px-4 py-3 text-slate-500">제안 삭제</td>
+                <td class="px-4 py-3 text-right"><span class="badge badge-critical">Delete</span></td>
+              </tr>
+              <tr class="border-b border-slate-50 hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-post">POST</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/proposals/{id}/votes</td>
+                <td class="px-4 py-3 text-slate-500">투표 등록</td>
+                <td class="px-4 py-3 text-right"><span class="badge" style="background:#fce7f3; color:#be185d;">Vote</span></td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="px-6 py-3"><span class="endpoint-method method-get">GET</span></td>
+                <td class="px-4 py-3 mono text-slate-700">/proposals/{id}/votes</td>
+                <td class="px-4 py-3 text-slate-500">투표 결과 조회</td>
+                <td class="px-4 py-3 text-right"><span class="badge" style="background:#fce7f3; color:#be185d;">Vote</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TEST PYRAMID ===== -->
+  <section id="tests">
+    <h2 class="section-title">
+      <span class="text-2xl">🧪</span> 테스트 피라미드
+    </h2>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Pyramid Visual -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+        <h3 class="font-semibold text-slate-700 text-center mb-6">Test Pyramid (~57 Tests)</h3>
+        <div class="space-y-1 flex flex-col items-center">
+          <!-- E2E / Feature (top - smallest) -->
+          <div class="pyramid-layer bg-red-500" style="width: 200px; height: 48px; clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%);">
+            Feature / E2E (2)
+          </div>
+          <!-- Integration -->
+          <div class="pyramid-layer bg-orange-400" style="width: 280px; height: 48px; clip-path: polygon(7% 0%, 93% 0%, 100% 100%, 0% 100%);">
+            Integration (5)
+          </div>
+          <!-- Contract -->
+          <div class="pyramid-layer bg-yellow-500" style="width: 360px; height: 48px; clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);">
+            Contract / Pact (8)
+          </div>
+          <!-- Component -->
+          <div class="pyramid-layer bg-blue-500" style="width: 440px; height: 48px; clip-path: polygon(3% 0%, 97% 0%, 100% 100%, 0% 100%);">
+            Component Tests (21)
+          </div>
+          <!-- Unit (bottom - largest) -->
+          <div class="pyramid-layer bg-green-500" style="width: 520px; height: 56px; clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%); clip-path: none; border-radius: 0 0 8px 8px;">
+            Unit Tests (16) + Versioning (3) + Other (2)
+          </div>
+        </div>
+        <div class="mt-6 grid grid-cols-2 gap-3 text-xs">
+          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-green-500"></div><span>Unit Tests</span></div>
+          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-blue-500"></div><span>Component Tests</span></div>
+          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-yellow-500"></div><span>Contract Tests (Pact)</span></div>
+          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-orange-400"></div><span>Integration Tests</span></div>
+          <div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-red-500"></div><span>Feature / E2E Tests</span></div>
+        </div>
+      </div>
+
+      <!-- Test Details -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-4">
+        <h3 class="font-semibold text-slate-700">테스트 세부 분류</h3>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between p-3 bg-green-50 rounded-xl">
+            <div>
+              <div class="font-semibold text-green-700 text-sm">Unit Tests</div>
+              <div class="text-xs text-slate-500">SessionControllerTest (8) + CfpControllerTest (8)</div>
+            </div>
+            <div class="text-2xl font-extrabold text-green-600">16</div>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
+            <div>
+              <div class="font-semibold text-blue-700 text-sm">Component Tests</div>
+              <div class="text-xs text-slate-500">Session (6) + Attendee (7) + CFP (8)</div>
+            </div>
+            <div class="text-2xl font-extrabold text-blue-600">21</div>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-xl">
+            <div>
+              <div class="font-semibold text-yellow-700 text-sm">Contract Tests (Pact)</div>
+              <div class="text-xs text-slate-500">Consumer (6) + Provider Verification</div>
+            </div>
+            <div class="text-2xl font-extrabold text-yellow-600">8</div>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-orange-50 rounded-xl">
+            <div>
+              <div class="font-semibold text-orange-700 text-sm">Integration Tests</div>
+              <div class="text-xs text-slate-500">Testcontainers PostgreSQL</div>
+            </div>
+            <div class="text-2xl font-extrabold text-orange-600">5</div>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-violet-50 rounded-xl">
+            <div>
+              <div class="font-semibold text-violet-700 text-sm">Versioning Tests</div>
+              <div class="text-xs text-slate-500">SessionVersioningTest (v1/v2)</div>
+            </div>
+            <div class="text-2xl font-extrabold text-violet-600">3</div>
+          </div>
+          <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+            <div>
+              <div class="font-semibold text-red-700 text-sm">Feature / E2E Tests</div>
+              <div class="text-xs text-slate-500">FeatureFlagTest + GatewayTest</div>
+            </div>
+            <div class="text-2xl font-extrabold text-red-600">4</div>
+          </div>
+        </div>
+        <div class="bg-slate-800 rounded-xl p-4 text-center">
+          <div class="text-3xl font-extrabold text-white">~57</div>
+          <div class="text-slate-400 text-sm">총 테스트 수</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DOCUMENTATION INDEX ===== -->
+  <section id="docs">
+    <h2 class="section-title">
+      <span class="text-2xl">📚</span> 문서 인덱스
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      <!-- ADR -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center text-lg">📐</div>
+          <div>
+            <h3 class="font-bold text-slate-800">Architecture Decision Records</h3>
+            <p class="text-xs text-slate-500">docs/adr/ — 6개 파일</p>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <a href="docs/adr/ADR-001-서비스-분리.md" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">ADR-001-서비스-분리.md</a>
+          <a href="docs/adr/ADR-002-pact-cdc-선택.md" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">ADR-002-pact-cdc-선택.md</a>
+          <a href="docs/adr/ADR-003-인메모리-저장소.md" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">ADR-003-인메모리-저장소.md</a>
+          <a href="docs/adr/ADR-004-spring-cloud-gateway.md" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">ADR-004-spring-cloud-gateway.md</a>
+          <a href="docs/adr/ADR-005-jwt-자체-발급.md" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">ADR-005-jwt-자체-발급.md</a>
+          <a href="docs/adr/ADR-006-shared-kernel-common-모듈.md" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">ADR-006-shared-kernel-common-모듈.md</a>
+        </div>
+      </div>
+
+      <!-- C4 -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center text-lg">🗺</div>
+          <div>
+            <h3 class="font-bold text-slate-800">C4 Architecture Diagrams</h3>
+            <p class="text-xs text-slate-500">docs/c4/ — 3개 파일</p>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <a href="docs/c4/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">C4-Level1-System-Context.md</a>
+          <a href="docs/c4/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">C4-Level2-Container.md</a>
+          <a href="docs/c4/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">C4-Level3-Component.md</a>
+        </div>
+        <div class="mt-4 p-3 bg-purple-50 rounded-lg text-xs text-purple-700">
+          C4 모델로 시스템 컨텍스트, 컨테이너, 컴포넌트 레벨 다이어그램 제공
+        </div>
+      </div>
+
+      <!-- Cloud Migration -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-lg bg-sky-100 flex items-center justify-center text-lg">☁️</div>
+          <div>
+            <h3 class="font-bold text-slate-800">Cloud Migration</h3>
+            <p class="text-xs text-slate-500">docs/cloud-migration/ — 3개 파일</p>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <a href="docs/cloud-migration/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">6R-전략.md</a>
+          <a href="docs/cloud-migration/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">Strangler-Fig-패턴.md</a>
+          <a href="docs/cloud-migration/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">Branch-by-Abstraction.md</a>
+        </div>
+        <div class="mt-4 p-3 bg-sky-50 rounded-lg text-xs text-sky-700">
+          모놀리스 → 마이크로서비스 마이그레이션 전략 문서
+        </div>
+      </div>
+
+      <!-- DDD -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center text-lg">🌐</div>
+          <div>
+            <h3 class="font-bold text-slate-800">DDD Documentation</h3>
+            <p class="text-xs text-slate-500">docs/ddd/ — 4개 파일</p>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <a href="docs/ddd/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">Context-Map.md</a>
+          <a href="docs/ddd/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">Context-Mapping-패턴.md</a>
+          <a href="docs/ddd/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">Event-Storming.md</a>
+          <a href="docs/ddd/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">Ubiquitous-Language.md</a>
+        </div>
+      </div>
+
+      <!-- Gap Analysis -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-lg bg-rose-100 flex items-center justify-center text-lg">📊</div>
+          <div>
+            <h3 class="font-bold text-slate-800">Gap Analysis</h3>
+            <p class="text-xs text-slate-500">docs/gap-analysis/ — 2개 파일</p>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <a href="docs/gap-analysis/GAP_ANALYSIS.md" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">GAP_ANALYSIS.md</a>
+          <a href="docs/gap-analysis/IMPLEMENTATION_PLAN.md" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">IMPLEMENTATION_PLAN.md</a>
+        </div>
+        <div class="mt-4 p-3 bg-rose-50 rounded-lg text-xs text-rose-700">
+          교재 커버리지 갭 분석 및 구현 계획서
+        </div>
+      </div>
+
+      <!-- Security -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center text-lg">🔒</div>
+          <div>
+            <h3 class="font-bold text-slate-800">Security Documents</h3>
+            <p class="text-xs text-slate-500">docs/security/ — 2개 파일</p>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <a href="docs/security/THREAT_MODEL.md" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">THREAT_MODEL.md</a>
+          <a href="docs/security/OWASP_API_CHECKLIST.md" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">OWASP_API_CHECKLIST.md</a>
+        </div>
+        <div class="mt-4 p-3 bg-red-50 rounded-lg text-xs text-red-700">
+          STRIDE 위협 모델링 + OWASP API Security Top 10 체크리스트
+        </div>
+      </div>
+
+      <!-- Service Mesh -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center text-lg">🕸</div>
+          <div>
+            <h3 class="font-bold text-slate-800">Service Mesh (Istio)</h3>
+            <p class="text-xs text-slate-500">docs/service-mesh/ — 6개 파일</p>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <a href="docs/service-mesh/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">README.md</a>
+          <a href="docs/service-mesh/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">virtual-service.yaml</a>
+          <a href="docs/service-mesh/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">destination-rule.yaml</a>
+          <a href="docs/service-mesh/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">gateway.yaml + 더보기...</a>
+        </div>
+      </div>
+
+      <!-- Kubernetes -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center text-lg">⚙️</div>
+          <div>
+            <h3 class="font-bold text-slate-800">Kubernetes Manifests</h3>
+            <p class="text-xs text-slate-500">k8s/ — 5개 파일</p>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <a href="k8s/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">attendee-deployment.yaml</a>
+          <a href="k8s/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">session-deployment.yaml</a>
+          <a href="k8s/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">cfp-deployment.yaml</a>
+          <a href="k8s/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">gateway-deployment.yaml</a>
+          <a href="k8s/" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">services.yaml</a>
+        </div>
+      </div>
+
+      <!-- Performance -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center text-lg">⚡</div>
+          <div>
+            <h3 class="font-bold text-slate-800">Performance Tests</h3>
+            <p class="text-xs text-slate-500">performance-test/ — 3개 파일</p>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <a href="performance-test/README.md" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">README.md</a>
+          <a href="performance-test/load-test.sh" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">load-test.sh</a>
+          <a href="performance-test/k6-load-test.js" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline mono">k6-load-test.js</a>
+        </div>
+        <div class="mt-4 p-3 bg-amber-50 rounded-lg text-xs text-amber-700">
+          k6 부하 테스트: 응답시간 &lt;100ms (p95), 에러율 &lt;1%
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TECH STACK ===== -->
+  <section id="techstack">
+    <h2 class="section-title">
+      <span class="text-2xl">⚡</span> Tech Stack
+    </h2>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+        <!-- Core -->
+        <div>
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Core Framework</h3>
+          <div class="flex flex-wrap gap-2">
+            <span class="tech-badge bg-green-50 text-green-800 border-green-200">
+              <span>🌿</span> Spring Boot 3.3.6
+            </span>
+            <span class="tech-badge bg-purple-50 text-purple-800 border-purple-200">
+              <span>K</span> Kotlin 1.9.25
+            </span>
+            <span class="tech-badge bg-orange-50 text-orange-800 border-orange-200">
+              <span>☕</span> JDK 21
+            </span>
+            <span class="tech-badge bg-blue-50 text-blue-800 border-blue-200">
+              <span>🐘</span> Gradle 8.10
+            </span>
+          </div>
+        </div>
+
+        <!-- Testing -->
+        <div>
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Testing</h3>
+          <div class="flex flex-wrap gap-2">
+            <span class="tech-badge bg-red-50 text-red-800 border-red-200">
+              <span>📜</span> Pact JVM 4.6.14
+            </span>
+            <span class="tech-badge bg-indigo-50 text-indigo-800 border-indigo-200">
+              <span>🐳</span> Testcontainers
+            </span>
+            <span class="tech-badge bg-teal-50 text-teal-800 border-teal-200">
+              <span>✅</span> REST-Assured
+            </span>
+            <span class="tech-badge bg-violet-50 text-violet-800 border-violet-200">
+              <span>🎭</span> MockK
+            </span>
+          </div>
+        </div>
+
+        <!-- Gateway & Auth -->
+        <div>
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Gateway & Auth</h3>
+          <div class="flex flex-wrap gap-2">
+            <span class="tech-badge bg-yellow-50 text-yellow-800 border-yellow-200">
+              <span>🔀</span> Spring Cloud Gateway MVC
+            </span>
+            <span class="tech-badge bg-gray-50 text-gray-800 border-gray-200">
+              <span>🔑</span> JJWT 0.12.6
+            </span>
+          </div>
+        </div>
+
+        <!-- API & Docs -->
+        <div>
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">API & Documentation</h3>
+          <div class="flex flex-wrap gap-2">
+            <span class="tech-badge bg-emerald-50 text-emerald-800 border-emerald-200">
+              <span>📖</span> SpringDoc OpenAPI 2.3.0
+            </span>
+            <span class="tech-badge bg-slate-50 text-slate-800 border-slate-200">
+              <span>🔴</span> RFC 7807 ProblemDetail
+            </span>
+          </div>
+        </div>
+
+        <!-- Observability -->
+        <div>
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Observability</h3>
+          <div class="flex flex-wrap gap-2">
+            <span class="tech-badge bg-orange-50 text-orange-800 border-orange-200">
+              <span>📊</span> Micrometer Prometheus
+            </span>
+            <span class="tech-badge bg-amber-50 text-amber-800 border-amber-200">
+              <span>🔥</span> Prometheus v2.53
+            </span>
+            <span class="tech-badge bg-purple-50 text-purple-800 border-purple-200">
+              <span>📈</span> Grafana 11.1
+            </span>
+          </div>
+        </div>
+
+        <!-- Infrastructure -->
+        <div>
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Infrastructure</h3>
+          <div class="flex flex-wrap gap-2">
+            <span class="tech-badge bg-blue-50 text-blue-800 border-blue-200">
+              <span>🐳</span> Docker Compose
+            </span>
+            <span class="tech-badge bg-cyan-50 text-cyan-800 border-cyan-200">
+              <span>⚙️</span> Kubernetes
+            </span>
+            <span class="tech-badge bg-sky-50 text-sky-800 border-sky-200">
+              <span>🕸</span> Istio Service Mesh
+            </span>
+            <span class="tech-badge bg-rose-50 text-rose-800 border-rose-200">
+              <span>🐘</span> PostgreSQL 17
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== QUICK START ===== -->
+  <section id="quickstart">
+    <h2 class="section-title">
+      <span class="text-2xl">🚀</span> Quick Start
+    </h2>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Steps -->
+      <div class="space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <div class="flex items-start gap-4 mb-4">
+            <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">1</div>
+            <div>
+              <h3 class="font-semibold text-slate-800">인프라 시작</h3>
+              <p class="text-sm text-slate-500 mt-1">PostgreSQL + Pact Broker 컨테이너 실행</p>
+            </div>
+          </div>
+          <pre class="bg-slate-900 rounded-lg p-4 text-sm text-green-400 overflow-x-auto"><code>docker compose up -d</code></pre>
+          <div class="text-xs text-slate-500 mt-2">Pact Broker: http://localhost:9292 (pact/pact)</div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <div class="flex items-start gap-4 mb-4">
+            <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">2</div>
+            <div>
+              <h3 class="font-semibold text-slate-800">전체 서비스 시작</h3>
+              <p class="text-sm text-slate-500 mt-1">모든 마이크로서비스 빌드 & 실행</p>
+            </div>
+          </div>
+          <pre class="bg-slate-900 rounded-lg p-4 text-sm text-green-400 overflow-x-auto"><code>chmod +x start-all.sh
+./start-all.sh</code></pre>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <div class="flex items-start gap-4 mb-4">
+            <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">3</div>
+            <div>
+              <h3 class="font-semibold text-slate-800">모니터링 시작 (선택)</h3>
+              <p class="text-sm text-slate-500 mt-1">Prometheus + Grafana 대시보드</p>
+            </div>
+          </div>
+          <pre class="bg-slate-900 rounded-lg p-4 text-sm text-green-400 overflow-x-auto"><code>docker compose -f docker-compose.yml \
+  -f docker-compose.monitoring.yml up -d</code></pre>
+          <div class="text-xs text-slate-500 mt-2">Grafana: http://localhost:3000 (admin/admin)</div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <div class="flex items-start gap-4 mb-4">
+            <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">4</div>
+            <div>
+              <h3 class="font-semibold text-slate-800">테스트 실행</h3>
+              <p class="text-sm text-slate-500 mt-1">전체 테스트 피라미드 실행</p>
+            </div>
+          </div>
+          <pre class="bg-slate-900 rounded-lg p-4 text-sm text-green-400 overflow-x-auto"><code># 전체 테스트
+./gradlew test
+
+# Pact 계약 테스트
+./gradlew test -Ppact
+
+# 특정 서비스
+./gradlew :cfp-service:test</code></pre>
+        </div>
+      </div>
+
+      <!-- Endpoints Quick Reference -->
+      <div class="space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <h3 class="font-semibold text-slate-800 mb-4">서비스 URL 참조</h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
+              <span class="text-sm font-medium text-amber-800">Gateway</span>
+              <a href="http://localhost:8080" class="mono text-xs text-blue-600 hover:underline">localhost:8080</a>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <span class="text-sm font-medium text-green-800">Attendee Service</span>
+              <a href="http://localhost:8081" class="mono text-xs text-blue-600 hover:underline">localhost:8081</a>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <span class="text-sm font-medium text-blue-800">Session Service</span>
+              <a href="http://localhost:8082" class="mono text-xs text-blue-600 hover:underline">localhost:8082</a>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+              <span class="text-sm font-medium text-purple-800">CFP Service</span>
+              <a href="http://localhost:8083" class="mono text-xs text-blue-600 hover:underline">localhost:8083</a>
+            </div>
+          </div>
+
+          <h3 class="font-semibold text-slate-800 mt-5 mb-3">Swagger UI</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">Attendee</span>
+              <a href="http://localhost:8081/swagger-ui.html" class="mono text-xs text-blue-600 hover:underline">:8081/swagger-ui.html</a>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">Session</span>
+              <a href="http://localhost:8082/swagger-ui.html" class="mono text-xs text-blue-600 hover:underline">:8082/swagger-ui.html</a>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">CFP</span>
+              <a href="http://localhost:8083/swagger-ui.html" class="mono text-xs text-blue-600 hover:underline">:8083/swagger-ui.html</a>
+            </div>
+          </div>
+
+          <h3 class="font-semibold text-slate-800 mt-5 mb-3">Health & Monitoring</h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">Health Check</span>
+              <a href="http://localhost:8080/actuator/health" class="mono text-xs text-blue-600 hover:underline">:8080/actuator/health</a>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">Prometheus Metrics</span>
+              <a href="http://localhost:8082/actuator/prometheus" class="mono text-xs text-blue-600 hover:underline">:8082/actuator/prometheus</a>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">Pact Broker</span>
+              <a href="http://localhost:9292" class="mono text-xs text-blue-600 hover:underline">localhost:9292</a>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-600">Grafana</span>
+              <a href="http://localhost:3000" class="mono text-xs text-blue-600 hover:underline">localhost:3000</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- JWT Token Example -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <h3 class="font-semibold text-slate-800 mb-3">JWT 토큰 발급 예시</h3>
+          <pre class="bg-slate-900 rounded-lg p-4 text-xs text-green-400 overflow-x-auto"><code>curl -X POST http://localhost:8080/api/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"username":"user","password":"pass"}'</code></pre>
+          <div class="mt-3 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
+            응답으로 받은 JWT를 Authorization: Bearer {token} 헤더로 사용
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="gradient-header mt-16 py-10 px-6">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="text-center md:text-left">
+        <div class="text-white font-bold text-lg">Pact Conference Demo — Phase 1</div>
+        <div class="text-slate-400 text-sm mt-1">Spring Boot 3.3.6 + Kotlin 1.9.25 + Pact JVM 4.6.14</div>
+      </div>
+      <div class="flex flex-wrap justify-center gap-4 text-sm">
+        <a href="#architecture" class="text-slate-400 hover:text-white">Architecture</a>
+        <a href="#phases" class="text-slate-400 hover:text-white">Phases</a>
+        <a href="#endpoints" class="text-slate-400 hover:text-white">API</a>
+        <a href="#docs" class="text-slate-400 hover:text-white">Docs</a>
+        <a href="docs/gap-analysis/GAP_ANALYSIS.md" class="text-slate-400 hover:text-white">GAP Analysis</a>
+      </div>
+      <div class="glass-card rounded-lg px-4 py-2 text-center">
+        <div class="text-white text-sm font-bold">교재 커버리지</div>
+        <div class="text-green-400 text-xl font-extrabold">11% → 70%+</div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Initialize Mermaid
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    flowchart: {
+      curve: 'basis',
+      padding: 20,
+    },
+    themeVariables: {
+      primaryColor: '#3b82f6',
+      primaryTextColor: '#1e3a8a',
+      primaryBorderColor: '#93c5fd',
+      lineColor: '#64748b',
+      secondaryColor: '#f0fdf4',
+      tertiaryColor: '#faf5ff',
+    }
+  });
+
+  // Smooth scroll for nav links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  // Animate coverage rings on load
+  window.addEventListener('load', () => {
+    document.querySelectorAll('.phase-bar').forEach(bar => {
+      const width = bar.getAttribute('data-width');
+      if (width) bar.style.width = width;
+    });
+  });
+</script>
+
+</body>
+</html>
